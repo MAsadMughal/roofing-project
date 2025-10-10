@@ -1,16 +1,15 @@
 <script lang="ts">
     import Button from '$lib/components/ui/button/button.svelte';
     import Input from '$lib/components/ui/input/input.svelte';
-    import Table from '$lib/components/ui/table/table.svelte';
-    import Badge from '$lib/components/ui/badge/badge.svelte';
     import Select from '$lib/components/ui/select/select.svelte';
+    import Table from '$lib/components/ui/table/table.svelte';
+    import Download from '@lucide/svelte/icons/download';
+    import Eye from '@lucide/svelte/icons/eye';
+    import FileCheck from '@lucide/svelte/icons/file-check';
+    import FileX from '@lucide/svelte/icons/file-x';
+    import Plus from '@lucide/svelte/icons/plus';
     import SearchIcon from '@lucide/svelte/icons/search';
-	import Plus from '@lucide/svelte/icons/plus';
-	import Download from '@lucide/svelte/icons/download';
-	import Send from '@lucide/svelte/icons/send-horizontal';
-	import Eye from '@lucide/svelte/icons/eye';
-	import FileCheck from '@lucide/svelte/icons/file-check';
-	import FileX from '@lucide/svelte/icons/file-x';
+    import Send from '@lucide/svelte/icons/send-horizontal';
 
 	type EstimateStatus = 'Draft' | 'Sent' | 'Viewed' | 'Accepted' | 'Declined' | 'Expired' | 'Invoiced' | 'Converted';
 
