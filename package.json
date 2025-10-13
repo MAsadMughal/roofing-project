@@ -13,7 +13,8 @@
 		"format": "prettier --write .",
 		"lint": "prettier --check . && eslint .",
 		"migrate": "node scripts/migrate.mjs",
-		"seed": "node scripts/seed.mjs"
+		"seed": "node scripts/seed.mjs",
+		"postinstall": "prisma generate"
 	},
 	"devDependencies": {
 		"@fontsource/fira-mono": "^5.2.7",
