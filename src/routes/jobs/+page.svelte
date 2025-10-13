@@ -12,34 +12,21 @@
 	import Eye from '@lucide/svelte/icons/eye';
 	import Calendar from '@lucide/svelte/icons/calendar';
 	import User2 from '@lucide/svelte/icons/user-2';
+    import { page } from '$app/stores';
+    import { goto } from '$app/navigation';
+    import { browser } from '$app/environment';
+    export let data: { jobs: any[]; q: string; status: string; dateFrom: string; dateTo: string };
 
-	type JobStatus = 'Scheduled' | 'In Progress' | 'Completed' | 'Pending Payment';
+	type JobStatus = 'scheduled' | 'in_progress' | 'completed' | 'cancelled';
 
-	type Job = {
-		id: string;
-		title: string;
-		customer: string;
-		address: string;
-		assignee?: string;
-		date: string; // YYYY-MM-DD
-		amount: number;
-		status: JobStatus;
-	};
-
-	const initialJobs: Job[] = [
-		{ id: 'j-1', title: 'Roof Inspection', customer: 'John Doe', address: '123 Main St', assignee: 'Sarah L.', date: '2025-10-02', amount: 250, status: 'Scheduled' },
-		{ id: 'j-2', title: 'Shingle Repair', customer: 'Mike Taylor', address: '44 Oak Ave', assignee: 'Alex P.', date: '2025-10-01', amount: 1200, status: 'In Progress' },
-		{ id: 'j-3', title: 'Full Re-roof', customer: 'Emma Brown', address: '8 Pine Rd', assignee: 'Team A', date: '2025-09-30', amount: 9800, status: 'Pending Payment' },
-		{ id: 'j-4', title: 'Gutter Installation', customer: 'James Smith', address: '77 Lake Blvd', assignee: 'Chris R.', date: '2025-09-28', amount: 2100, status: 'Completed' }
-	];
-
-	let jobs: Job[] = initialJobs.slice();
-	let searchText = '';
-	let statusFilter: 'All' | JobStatus = 'All';
+    type Job = any;
+    let jobs: Job[] = data.jobs;
+    let searchText = data.q || '';
+    let statusFilter: 'All' | JobStatus = (data.status as any) || 'All';
 	let sortBy: 'Newest' | 'Oldest' | 'Amount' | 'Customer' = 'Newest';
 	let viewMode: 'Board' | 'Table' = 'Board';
 
-	function formatAmount(n: number) {
+    function formatAmount(n: number) {
 		return new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD' }).format(n);
 	}
 
@@ -50,29 +37,43 @@
 		else if (job.status === 'Pending Payment') job.status = 'Completed';
 	}
 
-	$: filtered = jobs
-		.filter((j) => (statusFilter === 'All' ? true : j.status === statusFilter))
-		.filter((j) =>
-			searchText
-				? [j.title, j.customer, j.address, j.assignee ?? '']
-						.join(' ')
-						.toLowerCase()
-						.includes(searchText.toLowerCase())
-				: true
-		)
-		.toSorted((a, b) => {
-			if (sortBy === 'Newest') return b.date.localeCompare(a.date);
-			if (sortBy === 'Oldest') return a.date.localeCompare(b.date);
-			if (sortBy === 'Amount') return b.amount - a.amount;
-			return a.customer.localeCompare(b.customer);
-		});
+    function updateUrl() {
+        const params = new URLSearchParams($page.url.searchParams);
+        if (searchText) params.set('q', searchText); else params.delete('q');
+        if (statusFilter && statusFilter !== 'All') params.set('status', statusFilter as string); else params.delete('status');
+        const nextSearch = params.toString() ? `?${params.toString()}` : '';
+        const currentSearch = $page.url.search;
+        const path = $page.url.pathname;
+        if (browser && nextSearch !== currentSearch) {
+            goto(`${path}${nextSearch}`, { replaceState: true, keepFocus: true, noScroll: true });
+        }
+    }
 
-	const columns: { key: JobStatus; title: string }[] = [
-		{ key: 'Scheduled', title: 'Scheduled' },
-		{ key: 'In Progress', title: 'In Progress' },
-		{ key: 'Completed', title: 'Completed' },
-		{ key: 'Pending Payment', title: 'Pending Payment' }
-	];
+    $: filtered = jobs
+        .filter((j) => (statusFilter === 'All' ? true : j.status === statusFilter))
+        .filter((j) =>
+            searchText
+                ? [j.title ?? '', j.description ?? '', `${j.first_name ?? ''} ${j.last_name ?? ''}`]
+                        .join(' ')
+                        .toLowerCase()
+                        .includes(searchText.toLowerCase())
+                : true
+        )
+        .toSorted((a, b) => {
+            if (sortBy === 'Newest') return (String(b.created_at ?? '')).localeCompare(String(a.created_at ?? ''));
+            if (sortBy === 'Oldest') return (String(a.created_at ?? '')).localeCompare(String(b.created_at ?? ''));
+            if (sortBy === 'Amount') return 0;
+            return (`${a.first_name ?? ''} ${a.last_name ?? ''}`).localeCompare(`${b.first_name ?? ''} ${b.last_name ?? ''}`);
+        });
+
+    $: if (browser) updateUrl();
+
+    const columns: { key: JobStatus; title: string }[] = [
+        { key: 'scheduled', title: 'Scheduled' },
+        { key: 'in_progress', title: 'In Progress' },
+        { key: 'completed', title: 'Completed' },
+        { key: 'cancelled', title: 'Cancelled' }
+    ];
 </script>
 
 <svelte:head>

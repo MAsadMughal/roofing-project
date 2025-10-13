@@ -14,8 +14,12 @@
 	import Info from '@lucide/svelte/icons/info';
 	import X from '@lucide/svelte/icons/x';
 	import User2 from '@lucide/svelte/icons/user-2';
+    import { page } from '$app/stores';
+    import { goto } from '$app/navigation';
+    import { browser } from '$app/environment';
+    export let data: { leads: any[]; q: string; status: string; source: string };
 
-	type Status = 'Assigned' | 'Contacted' | 'Active' | 'New';
+	type Status = 'new' | 'contacted' | 'qualified' | 'lost' | 'converted';
 	type WorkType = 'Repair' | 'Replace' | 'Installation' | 'Re-Roof';
 	type SourceType =
 		| 'Google Forms'
@@ -25,81 +29,22 @@
 		| 'Cold Calling'
 		| 'Email Marketing';
 
-	type Lead = {
-		id: string;
-		name: string;
-		address: string;
-		description: string;
-		phone: string;
-		source: SourceType;
-		sourceNote: string; // includes date text
-		status: Status;
-		workTypes: WorkType[];
-		isNew?: boolean;
-		watchlisted?: boolean;
-		createdAt: string; // ISO
-	};
-
-	const leads: Lead[] = [
-		{
-			id: '1',
-			name: 'FERNANDO JAMES',
-			address: 'St. 1, A.B.C. X.Y.Z.',
-			description:
-				'Lorem ipsum dolor sit amet, consectetur adipiscing elit. Nunc maximus, nulla ut commodo sagittis, sapien dui mattis dui, non pulvinar lorem felis nec erat Lorem ipsum dolor sit amet, consectetur adipiscing elit. Nunc maximus, nulla ut commodo sagittis, sapien dui mattis dui, non pulvinar lorem felis nec erat.',
-			phone: '+9234587323',
-			source: 'Outreach',
-			sourceNote: 'Via Outreach (Oct 1, 2025)',
-			status: 'New',
-			workTypes: ['Repair'],
-			isNew: true,
-			watchlisted: false,
-			createdAt: '2025-10-01T10:00:00Z'
-		},
-		{
-			id: '2',
-			name: 'FERNANDO JAMES',
-			address: 'St. 1, A.B.C. X.Y.Z.',
-			description:
-				'Lorem ipsum dolor sit amet, consectetur adipiscing elit. Nunc maximus, nulla ut commodo sagittis, sapien dui mattis dui, non pulvinar lorem felis nec erat, dui, non pulvinar lorem felis nec erat.',
-			phone: '+9234587323',
-			source: 'Google Forms',
-			sourceNote: 'Via Google Forms (Sep 30, 2025)',
-			status: 'Contacted',
-			workTypes: ['Replace', 'Installation'],
-			isNew: false,
-			watchlisted: true,
-			createdAt: '2025-09-30T09:00:00Z'
-		},
-		{
-			id: '3',
-			name: 'FERNANDO JAMES',
-			address: 'St. 1, A.B.C. X.Y.Z.',
-			description:
-				'Lorem ipsum dolor sit amet, consectetur adipiscing elit. Nunc maximus, nulla ut commodo sagittis, sapien dui mattis dui, non pulvinar lorem felis nec erat.',
-			phone: '+9234587323',
-			source: 'Website',
-			sourceNote: 'Via Website (Sep 30, 2025)',
-			status: 'Assigned',
-			workTypes: ['Re-Roof'],
-			isNew: true,
-			watchlisted: false,
-			createdAt: '2025-09-30T08:00:00Z'
-		}
-	];
+    type Lead = any;
+    let leads: Lead[] = data.leads;
 
 	// Toolbar state
-	let searchText = '';
-	let sortBy: 'Newest' | 'Oldest' | 'Name' | 'Source' = 'Newest';
-	let category: 'All' | Status = 'All';
+    let searchText = data.q || '';
+    let sortBy: 'Newest' | 'Oldest' | 'Name' | 'Source' = 'Newest';
+    let category: 'All' | Status = (data.status as any) || 'All';
 
 	// Sidebar filter state
 	let watchlistOnly = false;
 	let statusFilters: Record<Status, boolean> = {
-		Assigned: true,
-		Contacted: true,
-		Active: true,
-		New: true
+		new: true,
+		contacted: true,
+		qualified: true,
+		lost: true,
+		converted: true
 	};
 	let workTypeFilters: Record<WorkType, boolean> = {
 		Repair: true,
@@ -107,14 +52,26 @@
 		Installation: true,
 		'Re-Roof': true
 	};
-	let sourceFilters: Record<SourceType, boolean> = {
-		'Google Forms': true,
-		Website: true,
-		'Social Media': true,
-		Outreach: true,
-		'Cold Calling': true,
-		'Email Marketing': true
-	};
+    let sourceFilters: Record<SourceType, boolean> = {
+        'Google Forms': true,
+        Website: true,
+        'Social Media': true,
+        Outreach: true,
+        'Cold Calling': true,
+        'Email Marketing': true
+    };
+
+    function updateUrl() {
+        const params = new URLSearchParams($page.url.searchParams);
+        if (searchText) params.set('q', searchText); else params.delete('q');
+        if (category && category !== 'All') params.set('status', category as string); else params.delete('status');
+        const nextSearch = params.toString() ? `?${params.toString()}` : '';
+        const currentSearch = $page.url.search;
+        const path = $page.url.pathname;
+        if (browser && nextSearch !== currentSearch) {
+            goto(`${path}${nextSearch}`, { replaceState: true, keepFocus: true, noScroll: true });
+        }
+    }
 
 	// Collapsible sections
 	let openStatus = true;
@@ -126,26 +83,25 @@
 	}
 
 	// Derived filtered list
-	$: filtered = leads
+    $: filtered = leads
 		.filter((l) => (watchlistOnly ? l.watchlisted : true))
-		.filter((l) => (category === 'All' ? true : l.status === category))
-		.filter((l) => statusFilters[l.status])
-		.filter((l) => l.workTypes.some((wt) => workTypeFilters[wt]))
-		.filter((l) => sourceFilters[l.source])
+        .filter((l) => (category === 'All' ? true : l.status === category))
 		.filter((l) =>
 			searchText
-				? [l.name, l.address, l.description, l.source, l.sourceNote]
+				? [l.title ?? '', l.description ?? '', `${l.first_name ?? ''} ${l.last_name ?? ''}`, l.email ?? '', l.phone ?? '']
 						.join(' ')
 						.toLowerCase()
 						.includes(searchText.toLowerCase())
 				: true
 		)
 		.toSorted((a, b) => {
-			if (sortBy === 'Newest') return b.createdAt.localeCompare(a.createdAt);
-			if (sortBy === 'Oldest') return a.createdAt.localeCompare(b.createdAt);
-			if (sortBy === 'Name') return a.name.localeCompare(b.name);
-			return a.source.localeCompare(b.source);
+            if (sortBy === 'Newest') return (b.created_at ?? '').localeCompare(a.created_at ?? '');
+            if (sortBy === 'Oldest') return (a.created_at ?? '').localeCompare(b.created_at ?? '');
+            if (sortBy === 'Name') return ((a.first_name ?? '') + (a.last_name ?? '')).localeCompare((b.first_name ?? '') + (b.last_name ?? ''));
+            return (a.source ?? '').localeCompare(b.source ?? '');
 		});
+
+    $: if (browser) updateUrl();
 </script>
 
 <svelte:head>
@@ -167,7 +123,7 @@
 		</Button>
         <Select bind:value={sortBy} items={[{value:'Newest'},{value:'Oldest'},{value:'Name'},{value:'Source'}]} />
 
-        <Select bind:value={category} class="ml-auto" items={[{value:'All',label:'CATEGORY'},{value:'Assigned'},{value:'Contacted'},{value:'Active'},{value:'New'}]} />
+		<Select bind:value={category} class="ml-auto" items={[{value:'All',label:'CATEGORY'},{value:'new',label:'NEW'},{value:'contacted',label:'CONTACTED'},{value:'qualified',label:'QUALIFIED'},{value:'lost',label:'LOST'},{value:'converted',label:'CONVERTED'}]} />
 
 		<Button variant="outline" class="ml-auto h-10">GO TO WATCHLIST</Button>
 	</div>
@@ -191,8 +147,8 @@
 				<div class="space-y-2 pl-2">
 					{#each Object.keys(statusFilters) as s}
                         <Label class="flex items-center gap-2 text-sm">
-                            <Checkbox bind:checked={statusFilters[s as Status]} />
-                            {s}
+							<Checkbox bind:checked={statusFilters[s as Status]} />
+							{(s as string).toUpperCase()}
                         </Label>
 					{/each}
 				</div>
@@ -241,16 +197,12 @@
 								<User2 class="size-6" />
 							</div>
 							<div>
-								<div class="text-sm font-semibold tracking-wide">{lead.name}</div>
-								<div class="text-xs text-muted-foreground">{lead.address}</div>
+					<div class="text-sm font-semibold tracking-wide">{(lead.first_name ?? '') + ' ' + (lead.last_name ?? '')}</div>
+					<div class="text-xs text-muted-foreground">{lead.email}</div>
 							</div>
 						</div>
 						<div class="flex items-center gap-2">
-                            {#if lead.isNew}
-                                <Badge class="text-[10px] px-2 py-1 border bg-accent">NEW</Badge>
-                            {:else}
-                                <Badge class="text-[10px] px-2 py-1 border bg-muted">{lead.status}</Badge>
-                            {/if}
+						<Badge class="text-[10px] px-2 py-1 border bg-muted">{(lead.status ?? '').toUpperCase()}</Badge>
 						</div>
 					</div>
 
@@ -266,7 +218,7 @@
 
 						<div class="flex items-center gap-2 text-sm text-muted-foreground">
 							<Info class="size-4" />
-							<span>{lead.sourceNote}</span>
+						<span>Source: {lead.source ?? '-'} • {String(lead.created_at ?? '').slice(0,10)}</span>
 						</div>
 
 						<div class="flex items-center gap-3">

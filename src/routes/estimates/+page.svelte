@@ -10,31 +10,18 @@
     import Plus from '@lucide/svelte/icons/plus';
     import SearchIcon from '@lucide/svelte/icons/search';
     import Send from '@lucide/svelte/icons/send-horizontal';
+    import { page } from '$app/stores';
+    import { goto } from '$app/navigation';
+    import { browser } from '$app/environment';
+    export let data: { estimates: any[]; q: string; status: string };
 
 	type EstimateStatus = 'Draft' | 'Sent' | 'Viewed' | 'Accepted' | 'Declined' | 'Expired' | 'Invoiced' | 'Converted';
 
-	type Estimate = {
-		id: string;
-		number: string;
-		date: string; // ISO YYYY-MM-DD
-		customer: string;
-		amount: number; // USD
-		status: EstimateStatus;
-	};
+    type Estimate = any;
+    const estimates: Estimate[] = data.estimates;
 
-	const estimates: Estimate[] = [
-		{ id: 'e-101', number: 'EST-101', date: '2025-10-02', customer: 'John Doe', amount: 1250, status: 'Draft' },
-		{ id: 'e-102', number: 'EST-102', date: '2025-10-01', customer: 'Mike Taylor', amount: 5200, status: 'Sent' },
-		{ id: 'e-103', number: 'EST-103', date: '2025-09-30', customer: 'Sarah Lee', amount: 8300, status: 'Viewed' },
-		{ id: 'e-104', number: 'EST-104', date: '2025-09-29', customer: 'James Smith', amount: 2400, status: 'Accepted' },
-		{ id: 'e-105', number: 'EST-105', date: '2025-09-28', customer: 'Emma Brown', amount: 3100, status: 'Declined' },
-		{ id: 'e-106', number: 'EST-106', date: '2025-09-27', customer: 'Oliver Gray', amount: 4100, status: 'Invoiced' },
-		{ id: 'e-107', number: 'EST-107', date: '2025-09-26', customer: 'Ava Wilson', amount: 9600, status: 'Converted' },
-		{ id: 'e-108', number: 'EST-108', date: '2025-09-25', customer: 'Lucas Green', amount: 1500, status: 'Expired' }
-	];
-
-	let searchText = '';
-	let statusFilter: 'All' | EstimateStatus = 'All';
+    let searchText = data.q || '';
+    let statusFilter: 'All' | EstimateStatus = (data.status as any) || 'All';
 	let sortBy: 'Newest' | 'Oldest' | 'Amount' | 'Customer' = 'Newest';
 
 	function badgeClass(status: EstimateStatus) {
@@ -58,23 +45,40 @@
 		}
 	}
 
-	function formatAmount(n: number) {
+    function formatAmount(n: number) {
 		return new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD' }).format(n);
 	}
 
-	$: filtered = estimates
-		.filter((e) => (statusFilter === 'All' ? true : e.status === statusFilter))
-		.filter((e) =>
-			searchText
-				? [e.number, e.customer].join(' ').toLowerCase().includes(searchText.toLowerCase())
-				: true
-		)
-		.toSorted((a, b) => {
-			if (sortBy === 'Newest') return b.date.localeCompare(a.date);
-			if (sortBy === 'Oldest') return a.date.localeCompare(b.date);
-			if (sortBy === 'Amount') return b.amount - a.amount;
-			return a.customer.localeCompare(b.customer);
-		});
+    function updateUrl() {
+        const params = new URLSearchParams($page.url.searchParams);
+        if (searchText) params.set('q', searchText); else params.delete('q');
+        if (statusFilter && statusFilter !== 'All') params.set('status', statusFilter as string); else params.delete('status');
+        const nextSearch = params.toString() ? `?${params.toString()}` : '';
+        const currentSearch = $page.url.search;
+        const path = $page.url.pathname;
+        if (browser && nextSearch !== currentSearch) {
+            goto(`${path}${nextSearch}`, { replaceState: true, keepFocus: true, noScroll: true });
+        }
+    }
+
+    $: filtered = estimates
+        .filter((e) => (statusFilter === 'All' ? true : e.status === statusFilter))
+        .filter((e) =>
+            searchText
+                ? [`${e.first_name ?? ''} ${e.last_name ?? ''}`]
+                        .join(' ')
+                        .toLowerCase()
+                        .includes(searchText.toLowerCase())
+                : true
+        )
+        .toSorted((a, b) => {
+            if (sortBy === 'Newest') return (String(b.created_at ?? '')).localeCompare(String(a.created_at ?? ''));
+            if (sortBy === 'Oldest') return (String(a.created_at ?? '')).localeCompare(String(b.created_at ?? ''));
+            if (sortBy === 'Amount') return (Number(b.total_amount ?? 0)) - (Number(a.total_amount ?? 0));
+            return (`${a.first_name ?? ''} ${a.last_name ?? ''}`).localeCompare(`${b.first_name ?? ''} ${b.last_name ?? ''}`);
+        });
+
+    $: if (browser) updateUrl();
 
 	function sendEstimate(e: Estimate) {
 		console.log('Send', e.id);

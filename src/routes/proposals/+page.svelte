@@ -11,29 +11,18 @@
 	import Check from '@lucide/svelte/icons/check';
 	import X from '@lucide/svelte/icons/x';
 	import FileText from '@lucide/svelte/icons/file-text';
+    import { page } from '$app/stores';
+    import { goto } from '$app/navigation';
+    import { browser } from '$app/environment';
+    export let data: { proposals: any[]; q: string; status: string };
 
 	type ProposalStatus = 'Draft' | 'Sent' | 'Viewed' | 'Approved' | 'Declined' | 'Expired';
 
-	type Proposal = {
-		id: string;
-		number: string;
-		date: string; // ISO YYYY-MM-DD
-		client: string;
-		amount: number;
-		status: ProposalStatus;
-	};
+    type Proposal = any;
+    const proposals: Proposal[] = data.proposals;
 
-	const proposals: Proposal[] = [
-		{ id: 'p-201', number: 'PR-201', date: '2025-10-02', client: 'Sarah Lee', amount: 7450, status: 'Draft' },
-		{ id: 'p-202', number: 'PR-202', date: '2025-10-01', client: 'John Doe', amount: 5200, status: 'Sent' },
-		{ id: 'p-203', number: 'PR-203', date: '2025-09-30', client: 'James Smith', amount: 9800, status: 'Viewed' },
-		{ id: 'p-204', number: 'PR-204', date: '2025-09-29', client: 'Emma Brown', amount: 4100, status: 'Approved' },
-		{ id: 'p-205', number: 'PR-205', date: '2025-09-28', client: 'Mike Taylor', amount: 3675, status: 'Declined' },
-		{ id: 'p-206', number: 'PR-206', date: '2025-09-27', client: 'Olivia Green', amount: 2650, status: 'Expired' }
-	];
-
-	let searchText = '';
-	let statusFilter: 'All' | ProposalStatus = 'All';
+    let searchText = data.q || '';
+    let statusFilter: 'All' | ProposalStatus = (data.status as any) || 'All';
 	let sortBy: 'Newest' | 'Oldest' | 'Amount' | 'Client' = 'Newest';
 
 	function badgeClass(status: ProposalStatus) {
@@ -53,19 +42,33 @@
 		}
 	}
 
-	function formatAmount(n: number) {
+    function formatAmount(n: number) {
 		return new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD' }).format(n);
 	}
 
-	$: filtered = proposals
-		.filter((p) => (statusFilter === 'All' ? true : p.status === statusFilter))
-		.filter((p) => (searchText ? [p.number, p.client].join(' ').toLowerCase().includes(searchText.toLowerCase()) : true))
-		.toSorted((a, b) => {
-			if (sortBy === 'Newest') return b.date.localeCompare(a.date);
-			if (sortBy === 'Oldest') return a.date.localeCompare(b.date);
-			if (sortBy === 'Amount') return b.amount - a.amount;
-			return a.client.localeCompare(b.client);
-		});
+    function updateUrl() {
+        const params = new URLSearchParams($page.url.searchParams);
+        if (searchText) params.set('q', searchText); else params.delete('q');
+        if (statusFilter && statusFilter !== 'All') params.set('status', statusFilter as string); else params.delete('status');
+        const nextSearch = params.toString() ? `?${params.toString()}` : '';
+        const currentSearch = $page.url.search;
+        const path = $page.url.pathname;
+        if (browser && nextSearch !== currentSearch) {
+            goto(`${path}${nextSearch}`, { replaceState: true, keepFocus: true, noScroll: true });
+        }
+    }
+
+    $: filtered = proposals
+        .filter((p) => (statusFilter === 'All' ? true : p.status === statusFilter))
+        .filter((p) => (searchText ? [`${p.first_name ?? ''} ${p.last_name ?? ''}`].join(' ').toLowerCase().includes(searchText.toLowerCase()) : true))
+        .toSorted((a, b) => {
+            if (sortBy === 'Newest') return (String(b.created_at ?? '')).localeCompare(String(a.created_at ?? ''));
+            if (sortBy === 'Oldest') return (String(a.created_at ?? '')).localeCompare(String(b.created_at ?? ''));
+            if (sortBy === 'Amount') return (Number(b.total_amount ?? 0)) - (Number(a.total_amount ?? 0));
+            return (`${a.first_name ?? ''} ${a.last_name ?? ''}`).localeCompare(`${b.first_name ?? ''} ${b.last_name ?? ''}`);
+        });
+
+    $: if (browser) updateUrl();
 
 	function sendProposal(p: Proposal) { console.log('Send', p.id); }
 	function viewProposal(p: Proposal) { console.log('View', p.id); }

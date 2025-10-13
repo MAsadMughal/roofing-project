@@ -11,7 +11,9 @@
 		"check": "svelte-kit sync && svelte-check --tsconfig ./tsconfig.json",
 		"check:watch": "svelte-kit sync && svelte-check --tsconfig ./tsconfig.json --watch",
 		"format": "prettier --write .",
-		"lint": "prettier --check . && eslint ."
+		"lint": "prettier --check . && eslint .",
+		"migrate": "node scripts/migrate.mjs",
+		"seed": "node scripts/seed.mjs"
 	},
 	"devDependencies": {
 		"@fontsource/fira-mono": "^5.2.7",
@@ -43,6 +45,9 @@
 		]
 	},
 	"dependencies": {
-		"postgres": "^3.4.7"
+		"postgres": "^3.4.7",
+		"dotenv": "^16.4.5",
+		"@prisma/client": "^6.2.1",
+		"prisma": "^6.2.1"
 	}
 }
