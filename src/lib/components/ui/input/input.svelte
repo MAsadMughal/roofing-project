@@ -20,6 +20,7 @@
 
 <input
   bind:this={ref}
+  bind:value={value}
   class={cn(
     "flex h-10 w-full rounded-md border bg-background px-3 py-2 text-sm outline-none ring-offset-background placeholder:text-muted-foreground focus-visible:ring-[3px] focus-visible:ring-ring/50 disabled:cursor-not-allowed disabled:opacity-50",
     className

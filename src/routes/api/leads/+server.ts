@@ -1,8 +1,11 @@
 import type { RequestHandler } from '@sveltejs/kit';
 import { prisma } from '$lib/server/prisma';
 import { json } from '$lib/server/json';
+import { requireRole } from '$lib/server/auth';
 
-export const GET: RequestHandler = async ({ url }) => {
+export const GET: RequestHandler = async (event) => {
+    requireRole(event, 'OWNER');
+    const { url } = event;
 	const status = url.searchParams.get('status') ?? undefined;
 	const q = url.searchParams.get('q') ?? undefined;
 	const source = url.searchParams.get('source') ?? undefined;
@@ -35,7 +38,9 @@ export const GET: RequestHandler = async ({ url }) => {
 	})));
 };
 
-export const POST: RequestHandler = async ({ request }) => {
+export const POST: RequestHandler = async (event) => {
+    requireRole(event, 'OWNER');
+    const { request } = event;
 	const body = await request.json();
 	const { customer_id, title, description, status, source } = body;
 	const [row] = await sql`

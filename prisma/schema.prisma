@@ -9,6 +9,36 @@ datasource db {
 	url      = env("DATABASE_URL")
 }
 
+model User {
+    id           BigInt     @id @default(autoincrement()) @db.BigInt
+    email        String     @unique
+    passwordHash String     @map("password_hash")
+    firstName    String?    @map("first_name")
+    lastName     String?    @map("last_name")
+    role         String     @default("REP")
+    customerId   BigInt?    @map("customer_id")
+    createdAt    DateTime   @default(now()) @map("created_at") @db.Timestamptz(6)
+    updatedAt    DateTime   @default(now()) @map("updated_at") @db.Timestamptz(6)
+
+    sessions     Session[]
+    customer     Customer?  @relation(fields: [customerId], references: [id], onDelete: SetNull)
+
+    @@map("users")
+}
+
+model Session {
+    id        String    @id
+    userId    BigInt    @map("user_id")
+    expiresAt DateTime  @map("expires_at") @db.Timestamptz(6)
+    createdAt DateTime  @default(now()) @map("created_at") @db.Timestamptz(6)
+
+    user      User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+    @@index([userId], map: "sessions_user_id_idx")
+    @@index([expiresAt], map: "sessions_expires_at_idx")
+    @@map("sessions")
+}
+
 model Customer {
 	id            BigInt      @id @default(autoincrement()) @db.BigInt
 	firstName     String      @map("first_name")
@@ -27,6 +57,7 @@ model Customer {
 	jobs          Job[]
 	estimates     Estimate[]
 	invoices      Invoice[]
+    users        User[]
 
 	@@map("customers")
 }

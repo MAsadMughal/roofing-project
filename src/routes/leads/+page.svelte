@@ -8,7 +8,7 @@
 	import Checkbox from '$lib/components/ui/checkbox/checkbox.svelte';
 	import Input from '$lib/components/ui/input/input.svelte';
 	import Label from '$lib/components/ui/label/label.svelte';
-	import Select from '$lib/components/ui/select/select.svelte';
+	import * as Select from '$lib/components/ui/select';
 	import ChevronDown from '@lucide/svelte/icons/chevron-down';
 	import Info from '@lucide/svelte/icons/info';
 	import PhoneCall from '@lucide/svelte/icons/phone-call';
@@ -16,7 +16,7 @@
 	import SlidersHorizontal from '@lucide/svelte/icons/sliders-horizontal';
 	import User2 from '@lucide/svelte/icons/user-2';
 	import X from '@lucide/svelte/icons/x';
-	export let data: { leads: any[]; q: string; status: string; source: string };
+	const { data } = $props<{ leads: any[]; q: string; status: string; source: string }>();
 
 	type Status = 'new' | 'contacted' | 'qualified' | 'lost' | 'converted';
 	type WorkType = 'Repair' | 'Replace' | 'Installation' | 'Re-Roof';
@@ -32,12 +32,32 @@
 	let leads: Lead[] = data.leads;
 
 	// Toolbar state
-	let searchText = data.q || '';
-	let sortBy: 'Newest' | 'Oldest' | 'Name' | 'Source' = 'Newest';
-	let category: 'All' | Status = (data.status as any) || 'All';
+	let searchText = $state(data.q || '');
+	let sortBy: 'Newest' | 'Oldest' | 'Name' | 'Source' = $state('Newest');
+	let category: 'All' | Status = $state(((data.status as any) || 'All') as 'All' | Status);
+
+	const sortOptions: Array<'Newest' | 'Oldest' | 'Name' | 'Source'> = [
+		'Newest',
+		'Oldest',
+		'Name',
+		'Source'
+	];
+	const sortTriggerContent = $derived(sortBy);
+
+	const categoryItems: Array<{ value: 'All' | Status; label: string }> = [
+		{ value: 'All', label: 'CATEGORY' },
+		{ value: 'new', label: 'NEW' },
+		{ value: 'contacted', label: 'CONTACTED' },
+		{ value: 'qualified', label: 'QUALIFIED' },
+		{ value: 'lost', label: 'LOST' },
+		{ value: 'converted', label: 'CONVERTED' }
+	];
+	const categoryTriggerContent = $derived(
+		categoryItems.find((c) => c.value === category)?.label ?? 'CATEGORY'
+	);
 
 	// Sidebar filter state
-	let watchlistOnly = false;
+	let watchlistOnly = $state(false);
 	let statusFilters: Record<Status, boolean> = {
 		new: true,
 		contacted: true,
@@ -75,43 +95,45 @@
 	}
 
 	// Collapsible sections
-	let openStatus = true;
-	let openWorkType = true;
-	let openSource = true;
+	let openStatus = $state(true);
+	let openWorkType = $state(true);
+	let openSource = $state(true);
 
 	function toggleWatchlist(lead: Lead) {
 		lead.watchlisted = !lead.watchlisted;
 	}
 
 	// Derived filtered list
-	$: filtered = leads
-		.filter((l) => (watchlistOnly ? l.watchlisted : true))
-		.filter((l) => (category === 'All' ? true : l.status === category))
-		.filter((l) =>
-			searchText
-				? [
-						l.title ?? '',
-						l.description ?? '',
-						`${l.first_name ?? ''} ${l.last_name ?? ''}`,
-						l.email ?? '',
-						l.phone ?? ''
-					]
-						.join(' ')
-						.toLowerCase()
-						.includes(searchText.toLowerCase())
-				: true
-		)
-		.toSorted((a, b) => {
-			if (sortBy === 'Newest') return (b.created_at ?? '').localeCompare(a.created_at ?? '');
-			if (sortBy === 'Oldest') return (a.created_at ?? '').localeCompare(b.created_at ?? '');
-			if (sortBy === 'Name')
-				return ((a.first_name ?? '') + (a.last_name ?? '')).localeCompare(
-					(b.first_name ?? '') + (b.last_name ?? '')
-				);
-			return (a.source ?? '').localeCompare(b.source ?? '');
-		});
+	const filtered = $derived(
+		leads
+			.filter((l) => (watchlistOnly ? l.watchlisted : true))
+			.filter((l) => (category === 'All' ? true : l.status === category))
+			.filter((l) =>
+				searchText
+					? [
+							l.title ?? '',
+							l.description ?? '',
+							`${l.first_name ?? ''} ${l.last_name ?? ''}`,
+							l.email ?? '',
+							l.phone ?? ''
+						]
+							.join(' ')
+							.toLowerCase()
+							.includes(searchText.toLowerCase())
+					: true
+			)
+			.toSorted((a, b) => {
+				if (sortBy === 'Newest') return (b.created_at ?? '').localeCompare(a.created_at ?? '');
+				if (sortBy === 'Oldest') return (a.created_at ?? '').localeCompare(b.created_at ?? '');
+				if (sortBy === 'Name')
+					return ((a.first_name ?? '') + (a.last_name ?? '')).localeCompare(
+						(b.first_name ?? '') + (b.last_name ?? '')
+					);
+				return (a.source ?? '').localeCompare(b.source ?? '');
+			})
+	);
 
-	$: if (browser) updateUrl();
+	$effect(() => { if (browser) updateUrl(); });
 </script>
 
 <svelte:head>
@@ -122,32 +144,38 @@
 	<h1 class="mb-4 text-3xl font-extrabold tracking-tight">LEADS</h1>
 
 	<!-- Toolbar -->
-	<div class="mb-4 flex flex-wrap items-center gap-3">
+	<div class="mb-4 flex flex-wrap items-center gap-3 relative">
 		<div class="relative min-w-64 grow">
 			<SearchIcon class="absolute top-1/2 left-3 size-4 -translate-y-1/2 text-muted-foreground" />
 			<Input placeholder="SEARCH LEADS..." bind:value={searchText} class="pl-9" />
 		</div>
-		<Button variant="outline" class="h-10">
-			<SlidersHorizontal class="size-4" />
-			Sort
-		</Button>
-		<Select
-			bind:value={sortBy}
-			items={[{ value: 'Newest' }, { value: 'Oldest' }, { value: 'Name' }, { value: 'Source' }]}
-		/>
+		<Select.Root type="single"  name="sort" bind:value={sortBy}>
+			<Select.Trigger class="min-w-40">
+				{sortTriggerContent}
+			</Select.Trigger>
+			<Select.Content class="min-w-40 absolute top-10">
+				<Select.Group>
+					<Select.Label>Sort</Select.Label>
+					{#each sortOptions as opt}
+						<Select.Item value={opt}>{opt}</Select.Item>
+					{/each}
+				</Select.Group>
+			</Select.Content>
+		</Select.Root>
 
-		<Select
-			bind:value={category}
-			class="ml-auto"
-			items={[
-				{ value: 'All', label: 'CATEGORY' },
-				{ value: 'new', label: 'NEW' },
-				{ value: 'contacted', label: 'CONTACTED' },
-				{ value: 'qualified', label: 'QUALIFIED' },
-				{ value: 'lost', label: 'LOST' },
-				{ value: 'converted', label: 'CONVERTED' }
-			]}
-		/>
+		<Select.Root type="single" name="category" bind:value={category}>
+			<Select.Trigger class="min-w-40">
+				{categoryTriggerContent}
+			</Select.Trigger>
+			<Select.Content class="min-w-40 absolute top-10">
+				<Select.Group>
+					<Select.Label>Category</Select.Label>
+					{#each categoryItems as c (c.value)}
+						<Select.Item value={c.value} label={c.label}>{c.label}</Select.Item>
+					{/each}
+				</Select.Group>
+			</Select.Content>
+		</Select.Root>
 
 		<Button variant="outline" class="ml-auto h-10">GO TO WATCHLIST</Button>
 	</div>
@@ -165,7 +193,7 @@
 			<!-- Status -->
 			<button
 				class="flex w-full items-center justify-between py-2 font-semibold"
-				on:click={() => (openStatus = !openStatus)}
+				onclick={() => (openStatus = !openStatus)}
 			>
 				<span class="text-sm">STATUS</span>
 				<ChevronDown class={`size-4 transition-transform ${openStatus ? 'rotate-180' : ''}`} />
@@ -184,7 +212,7 @@
 			<!-- Work Type -->
 			<button
 				class="mt-3 flex w-full items-center justify-between py-2 font-semibold"
-				on:click={() => (openWorkType = !openWorkType)}
+				onclick={() => (openWorkType = !openWorkType)}
 			>
 				<span class="text-sm">Work Type</span>
 				<ChevronDown class={`size-4 transition-transform ${openWorkType ? 'rotate-180' : ''}`} />
@@ -203,7 +231,7 @@
 			<!-- Source -->
 			<button
 				class="mt-3 flex w-full items-center justify-between py-2 font-semibold"
-				on:click={() => (openSource = !openSource)}
+				onclick={() => (openSource = !openSource)}
 			>
 				<span class="text-sm">SOURCE</span>
 				<ChevronDown class={`size-4 transition-transform ${openSource ? 'rotate-180' : ''}`} />
@@ -265,13 +293,13 @@
 						</div>
 
 						<div class="flex items-center gap-3">
-							{#if lead.watchlisted}
-								<Button variant="outline" class="h-8" on:click={() => toggleWatchlist(lead)}>
+					{#if lead.watchlisted}
+						<Button variant="outline" class="h-8" onclick={() => toggleWatchlist(lead)}>
 									<X class="size-4" />
 									Remove from Watchlist
 								</Button>
 							{:else}
-								<Button variant="outline" class="h-8" on:click={() => toggleWatchlist(lead)}>
+						<Button variant="outline" class="h-8" onclick={() => toggleWatchlist(lead)}>
 									+ Add to Watchlist
 								</Button>
 							{/if}
