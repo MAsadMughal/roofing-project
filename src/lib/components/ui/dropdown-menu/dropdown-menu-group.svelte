@@ -1,0 +1,14 @@
+<script lang="ts" module>
+  import type { Snippet } from "svelte";
+  export type DropdownMenuGroupProps = { children?: Snippet };
+</script>
+
+<script lang="ts">
+  let { children }: DropdownMenuGroupProps = $props();
+</script>
+
+<div role="group" class="py-1">
+  {@render children?.()}
+</div>
+
+

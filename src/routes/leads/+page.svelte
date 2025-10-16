@@ -155,7 +155,7 @@
 			</Select.Trigger>
 			<Select.Content class="min-w-40 absolute top-10">
 				<Select.Group>
-					<Select.Label>Sort</Select.Label>
+			
 					{#each sortOptions as opt}
 						<Select.Item value={opt}>{opt}</Select.Item>
 					{/each}
@@ -169,7 +169,7 @@
 			</Select.Trigger>
 			<Select.Content class="min-w-40 absolute top-10">
 				<Select.Group>
-					<Select.Label>Category</Select.Label>
+				
 					{#each categoryItems as c (c.value)}
 						<Select.Item value={c.value} label={c.label}>{c.label}</Select.Item>
 					{/each}

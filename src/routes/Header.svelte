@@ -2,6 +2,8 @@
 	import { navigationMenuTriggerStyle } from '$lib/components/ui/navigation-menu/navigation-menu-trigger.svelte';
 	import { page } from '$app/stores';
 	import { goto, invalidateAll } from '$app/navigation';
+	import Button from '$lib/components/ui/button/button.svelte';
+	import * as DropdownMenu from '$lib/components/ui/dropdown-menu';
 
 	const links = [
 		{ label: 'DASHBOARD', href: '/' },
@@ -14,7 +16,7 @@
 	function isActive(path: string) {
 		return $page.url.pathname === path;
 	}
-console.log($page.data)
+	console.log($page.data);
 	function getInitial(): string {
 		const u = $page.data.user;
 		if (!u) return '';
@@ -34,7 +36,11 @@ console.log($page.data)
 	<div class="mx-auto w-full max-w-7xl px-4">
 		<div class="flex h-14 items-center justify-between">
 			<div class="flex items-center gap-6">
-				<a href="/" class="rounded-md bg-blue-600 px-3 py-1.5 text-xs font-bold text-white">LOGO</a>
+				<img
+					alt="Logo"
+					src="https://dcassetcdn.com/design_img/3656568/47349/47349_20884214_3656568_d2aa512e_image.png"
+					class="h-20"
+				/>
 				<nav class="flex items-center gap-2">
 					{#if $page.data.user}
 						{#each links.filter((l) => l.href !== '/leads' || $page.data.user?.role === 'OWNER') as link}
@@ -51,13 +57,21 @@ console.log($page.data)
 
 			<div class="flex items-center gap-3">
 				{#if $page.data.user}
-					<div class="flex size-9 items-center justify-center rounded-full bg-blue-600 text-sm font-bold text-white">
-						{getInitial()}
-					</div>
-					<button class="text-sm font-semibold underline underline-offset-4" on:click={logout}>Logout</button>
+					<DropdownMenu.Root>
+						<DropdownMenu.Trigger>
+							<div
+								class="flex size-6 items-center justify-center rounded-full bg-blue-600 text-xs font-bold text-white"
+							>
+								{getInitial()}
+							</div>
+						</DropdownMenu.Trigger>
+						<DropdownMenu.Content class="absolute top-10 right-0 z-50 min-w-40">
+							<DropdownMenu.Item><button on:click={logout}>Logout</button></DropdownMenu.Item>
+						</DropdownMenu.Content>
+					</DropdownMenu.Root>
 				{:else}
-					<a href="/login" class="text-sm font-semibold underline underline-offset-4">Login</a>
-					<a href="/signup" class="text-sm font-semibold underline underline-offset-4">Sign up</a>
+					<Button>Login</Button>
+					<Button>Signup</Button>
 				{/if}
 			</div>
 		</div>

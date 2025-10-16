@@ -84,7 +84,7 @@
             </Select.Trigger>
             <Select.Content class="absolute top-16 overflow-y-auto min-w-full max-w-40 max-h-40">
               <Select.Group>
-                <Select.Label>Roles</Select.Label>
+              
                 {#each roles as r (r.value)}
                   <Select.Item value={r.value} label={r.label}>
                     {r.label}

@@ -43,12 +43,16 @@ export const POST: RequestHandler = async (event) => {
     const { request } = event;
 	const body = await request.json();
 	const { customer_id, title, description, status, source } = body;
-	const [row] = await sql`
-		insert into leads (customer_id, title, description, status, source)
-		values (${customer_id}, ${title}, ${description}, ${status}, ${source})
-		returning *
-	`;
-	return new Response(JSON.stringify(row), { status: 201, headers: { 'content-type': 'application/json' } });
+	const lead = await prisma.lead.create({
+		data: {
+			customerId: customer_id != null ? BigInt(customer_id) : null,
+			title,
+			description: description ?? null,
+			status: status ?? undefined,
+			source: source ?? undefined
+		}
+	});
+	return json(lead, { status: 201 });
 };
 
 
