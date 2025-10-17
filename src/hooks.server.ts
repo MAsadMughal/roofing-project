@@ -20,6 +20,7 @@ export const handle: Handle = async ({ event, resolve }) => {
                 firstName: session.user.firstName,
                 lastName: session.user.lastName,
                 role: (session.user.role as any) as App.Locals['user'] extends infer T ? T extends { role: infer R } ? R : never : never,
+                contractorId: (session.user as any).contractorId ?? null,
                 customerId: session.user.customerId ?? null
             } as App.Locals['user'];
         } else if (session) {

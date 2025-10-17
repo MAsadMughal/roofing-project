@@ -1,17 +1,29 @@
-<script lang="ts" module>
-  import { cn } from "$lib/utils.js";
-  export type SelectTriggerProps = { class?: string; children?: any };
-</script>
-
 <script lang="ts">
-  import { getContext } from "svelte";
-  const ctx = getContext<any>("select-ctx");
-  let { class: className, children }: SelectTriggerProps = $props();
+	import { Select as SelectPrimitive } from "bits-ui";
+	import ChevronDownIcon from "@lucide/svelte/icons/chevron-down";
+	import { cn, type WithoutChild } from "$lib/utils.js";
+
+	let {
+		ref = $bindable(null),
+		class: className,
+		children,
+		size = "default",
+		...restProps
+	}: WithoutChild<SelectPrimitive.TriggerProps> & {
+		size?: "sm" | "default";
+	} = $props();
 </script>
 
-<button type="button" class={cn("inline-flex h-10 items-center justify-between rounded-md border bg-background px-3 text-sm", className)} aria-haspopup="listbox" aria-expanded={ctx.open} onclick={ctx.toggleOpen}>
-  <span class="truncate">{@render children?.()}</span>
-  <svg class="ml-2 size-4 opacity-60" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true"><path fill-rule="evenodd" d="M5.23 7.21a.75.75 0 011.06.02L10 11.17l3.71-3.94a.75.75 0 111.08 1.04l-4.25 4.5a.75.75 0 01-1.08 0l-4.25-4.5a.75.75 0 01.02-1.06z" clip-rule="evenodd"/></svg>
-</button>
-
-
+<SelectPrimitive.Trigger
+	bind:ref
+	data-slot="select-trigger"
+	data-size={size}
+	class={cn(
+		"border-input data-[placeholder]:text-muted-foreground [&_svg:not([class*='text-'])]:text-muted-foreground focus-visible:border-ring focus-visible:ring-ring/50 aria-invalid:ring-destructive/20 dark:aria-invalid:ring-destructive/40 aria-invalid:border-destructive dark:bg-input/30 dark:hover:bg-input/50 shadow-xs flex w-fit select-none items-center justify-between gap-2 whitespace-nowrap rounded-md border bg-transparent px-3 py-2 text-sm outline-none transition-[color,box-shadow] focus-visible:ring-[3px] disabled:cursor-not-allowed disabled:opacity-50 data-[size=default]:h-9 data-[size=sm]:h-8 *:data-[slot=select-value]:line-clamp-1 *:data-[slot=select-value]:flex *:data-[slot=select-value]:items-center *:data-[slot=select-value]:gap-2 [&_svg:not([class*='size-'])]:size-4 [&_svg]:pointer-events-none [&_svg]:shrink-0",
+		className
+	)}
+	{...restProps}
+>
+	{@render children?.()}
+	<ChevronDownIcon class="size-4 opacity-50" />
+</SelectPrimitive.Trigger>

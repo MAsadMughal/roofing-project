@@ -16,6 +16,7 @@ model User {
     firstName    String?    @map("first_name")
     lastName     String?    @map("last_name")
     role         String     @default("REP")
+    contractorId BigInt?    @map("contractor_id")
     customerId   BigInt?    @map("customer_id")
     createdAt    DateTime   @default(now()) @map("created_at") @db.Timestamptz(6)
     updatedAt    DateTime   @default(now()) @map("updated_at") @db.Timestamptz(6)
@@ -23,6 +24,8 @@ model User {
     sessions     Session[]
     customer     Customer?  @relation(fields: [customerId], references: [id], onDelete: SetNull)
     passwordResets PasswordReset[]
+    invitesSent  Invite[]   @relation("owner_invites")
+    assignedLeads Lead[]    @relation("LeadAssignedTo")
 
     @@map("users")
 }
@@ -70,13 +73,16 @@ model Lead {
 	description String?
 	status      String     @default("new")
 	source      String?
+    assignedUserId BigInt? @map("assigned_user_id")
 	createdAt   DateTime   @default(now()) @map("created_at") @db.Timestamptz(6)
 	updatedAt   DateTime   @default(now()) @map("updated_at") @db.Timestamptz(6)
 
 	customer   Customer?  @relation(fields: [customerId], references: [id], onDelete: SetNull)
+    assignedTo User?      @relation("LeadAssignedTo", fields: [assignedUserId], references: [id], onDelete: SetNull)
 	jobs       Job[]
 
 	@@index([customerId], map: "leads_customer_id_idx")
+    @@index([assignedUserId], map: "leads_assigned_user_id_idx")
 	@@map("leads")
 }
 
@@ -200,5 +206,24 @@ model PasswordReset {
 
     @@index([userId], map: "password_resets_user_id_idx")
     @@map("password_resets")
+}
+
+model Invite {
+    token         String    @id
+    ownerId       BigInt    @map("owner_id")
+    contractorId  BigInt    @map("contractor_id")
+    email         String
+    name          String?
+    phone         String?
+    role          String    @default("REP")
+    expiresAt     DateTime  @map("expires_at") @db.Timestamptz(6)
+    acceptedAt    DateTime? @map("accepted_at") @db.Timestamptz(6)
+    createdAt     DateTime  @default(now()) @map("created_at") @db.Timestamptz(6)
+
+    owner         User      @relation("owner_invites", fields: [ownerId], references: [id], onDelete: Cascade)
+
+    @@index([ownerId], map: "invites_owner_id_idx")
+    @@index([contractorId], map: "invites_contractor_id_idx")
+    @@map("invites")
 }
 

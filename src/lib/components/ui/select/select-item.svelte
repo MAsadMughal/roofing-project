@@ -1,19 +1,38 @@
-<script lang="ts" module>
-  import { cn } from "$lib/utils.js";
-  export type SelectItemProps = { value: string; label?: string; disabled?: boolean; children?: any };
-</script>
-
 <script lang="ts">
-  import { getContext } from "svelte";
-  const ctx = getContext<any>("select-ctx");
-  let { value, label, children, disabled = false }: SelectItemProps = $props();
-  const selected = $derived(ctx.value === value);
-  function onSelect() { if (!disabled) ctx.setValue(value); }
+	import CheckIcon from "@lucide/svelte/icons/check";
+	import { Select as SelectPrimitive } from "bits-ui";
+	import { cn, type WithoutChild } from "$lib/utils.js";
+
+	let {
+		ref = $bindable(null),
+		class: className,
+		value,
+		label,
+		children: childrenProp,
+		...restProps
+	}: WithoutChild<SelectPrimitive.ItemProps> = $props();
 </script>
 
-<div role="option" tabindex="0" aria-selected={selected} class={cn("flex cursor-pointer select-none items-center gap-2 rounded-sm px-2 py-1.5 text-sm hover:bg-accent hover:text-accent-foreground", disabled && "opacity-50 cursor-not-allowed")} onclick={onSelect} onkeydown={(e) => (e.key === 'Enter' || e.key === ' ') && onSelect()}>
-  <span class="inline-flex size-4 items-center justify-center">{#if selected}✓{/if}</span>
-  <span>{#if children}{@render children?.()}{:else}{label}{/if}</span>
-</div>
-
-
+<SelectPrimitive.Item
+	bind:ref
+	{value}
+	data-slot="select-item"
+	class={cn(
+		"data-[highlighted]:bg-accent data-[highlighted]:text-accent-foreground [&_svg:not([class*='text-'])]:text-muted-foreground outline-hidden *:[span]:last:flex *:[span]:last:items-center *:[span]:last:gap-2 relative flex w-full cursor-default select-none items-center gap-2 rounded-sm py-1.5 pl-2 pr-8 text-sm data-[disabled]:pointer-events-none data-[disabled]:opacity-50 [&_svg:not([class*='size-'])]:size-4 [&_svg]:pointer-events-none [&_svg]:shrink-0",
+		className
+	)}
+	{...restProps}
+>
+	{#snippet children({ selected, highlighted })}
+		<span class="absolute right-2 flex size-3.5 items-center justify-center">
+			{#if selected}
+				<CheckIcon class="size-4" />
+			{/if}
+		</span>
+		{#if childrenProp}
+			{@render childrenProp({ selected, highlighted })}
+		{:else}
+			{label || value}
+		{/if}
+	{/snippet}
+</SelectPrimitive.Item>

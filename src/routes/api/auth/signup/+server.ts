@@ -16,7 +16,11 @@ export const POST: RequestHandler = async ({ request, cookies }) => {
     const existingUser = await prisma.user.findUnique({ where: { email } });
     if (existingUser) return json({ error: 'email already registered' }, { status: 409 });
 
-    const roleValue = role ?? 'REP';
+    // Only allow open signup for OWNER or CUSTOMER; others must use invite
+    const roleValue = role ?? 'OWNER';
+    if (roleValue !== 'OWNER' && roleValue !== 'CUSTOMER') {
+        return json({ error: 'This role requires an invite' }, { status: 400 });
+    }
 
     let customerId: bigint | undefined;
     if (roleValue === 'CUSTOMER') {

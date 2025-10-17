@@ -9,6 +9,7 @@ declare global {
 				firstName?: string | null;
 				lastName?: string | null;
 				role: 'OWNER' | 'REP' | 'ESTIMATOR' | 'PM' | 'FOREMAN' | 'OFFICE' | 'CUSTOMER';
+				contractorId?: bigint | null;
 				customerId?: bigint | null;
 			} | null;
 			sessionId: string | null;

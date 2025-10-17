@@ -12,6 +12,8 @@
     import PhoneCall from '@lucide/svelte/icons/phone-call';
     import Plus from '@lucide/svelte/icons/plus';
     import ChevronRight from '@lucide/svelte/icons/chevron-right';
+    import { page } from '$app/stores';
+    import { goto } from '$app/navigation';
 
     const stats = [
         { label: 'Jobs in Progress', value: 3, trend: 'down', color: 'text-red-500' },
@@ -57,6 +59,15 @@
 
 <div class="flex flex-col gap-6 w-full">
     <h1 class="text-3xl font-extrabold tracking-tight">DASHBOARD</h1>
+
+    {#if $page.data.user?.role === 'OWNER'}
+        <div class="flex justify-end">
+            <Button class="gap-2" href="/members">
+                <Plus class="size-4" />
+                Add Members
+            </Button>
+        </div>
+    {/if}
 
     <!-- Stats -->
     <div class="grid grid-cols-1 sm:grid-cols-3 gap-6">

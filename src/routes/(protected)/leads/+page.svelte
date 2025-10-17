@@ -8,16 +8,15 @@
 	import Checkbox from '$lib/components/ui/checkbox/checkbox.svelte';
 	import Input from '$lib/components/ui/input/input.svelte';
 	import Label from '$lib/components/ui/label/label.svelte';
-	import * as Select from '$lib/components/ui/select';
+	import * as Select from '$lib/components/ui/select/index.js';
 	import ChevronDown from '@lucide/svelte/icons/chevron-down';
 	import Info from '@lucide/svelte/icons/info';
 	import PhoneCall from '@lucide/svelte/icons/phone-call';
 	import SearchIcon from '@lucide/svelte/icons/search';
-	import SlidersHorizontal from '@lucide/svelte/icons/sliders-horizontal';
 	import User2 from '@lucide/svelte/icons/user-2';
 	import X from '@lucide/svelte/icons/x';
 	const { data } = $props<{ leads: any[]; q: string; status: string; source: string }>();
-
+	import * as Dialog from '$lib/components/ui/dialog/index.js';
 	type Status = 'new' | 'contacted' | 'qualified' | 'lost' | 'converted';
 	type WorkType = 'Repair' | 'Replace' | 'Installation' | 'Re-Roof';
 	type SourceType =
@@ -30,7 +29,17 @@
 
 	type Lead = any;
 	let leads: Lead[] = data.leads;
+	const fruits = [
+		{ value: 'apple', label: 'Apple' },
+		{ value: 'banana', label: 'Banana' },
+		{ value: 'blueberry', label: 'Blueberry' },
+		{ value: 'grapes', label: 'Grapes' },
+		{ value: 'pineapple', label: 'Pineapple' }
+	];
 
+	let value = $state('');
+
+	const triggerContent = $derived(fruits.find((f) => f.value === value)?.label ?? 'Select a fruit');
 	// Toolbar state
 	let searchText = $state(data.q || '');
 	let sortBy: 'Newest' | 'Oldest' | 'Name' | 'Source' = $state('Newest');
@@ -103,6 +112,49 @@
 		lead.watchlisted = !lead.watchlisted;
 	}
 
+	// Assign modal state
+	let assignOpen = $state(false);
+	let selectedLeadId: bigint | null = $state(null);
+	let reps: Array<{ id: string; name: string; email: string }> = $state([]);
+	let selectedRepId: string | undefined = $state(undefined);
+	let assigning = $state(false);
+	let assignError: string | null = $state(null);
+
+	async function openAssign(leadId: bigint) {
+		assignError = null;
+		selectedLeadId = leadId;
+		assignOpen = true;
+		const res = await fetch('/api/users?role=REP');
+		const users = await res.json().catch(() => []);
+		reps = (users || []).map((u: any) => ({
+			id: String(u.id),
+			name: (u.firstName || '') + ' ' + (u.lastName || ''),
+			email: u.email
+		}));
+		selectedRepId = reps[0]?.id ?? undefined;
+	}
+
+	async function assignLead() {
+		if (!selectedLeadId || !selectedRepId) return;
+		assigning = true;
+		assignError = null;
+		try {
+			const res = await fetch(`/api/leads/${selectedLeadId}/assign`, {
+				method: 'POST',
+				headers: { 'content-type': 'application/json' },
+				body: JSON.stringify({ userId: selectedRepId })
+			});
+			const out = await res.json().catch(() => ({}));
+			if (!res.ok) {
+				assignError = out.error || 'Failed to assign lead';
+				return;
+			}
+			assignOpen = false;
+		} finally {
+			assigning = false;
+		}
+	}
+
 	// Derived filtered list
 	const filtered = $derived(
 		leads
@@ -133,7 +185,9 @@
 			})
 	);
 
-	$effect(() => { if (browser) updateUrl(); });
+	$effect(() => {
+		if (browser) updateUrl();
+	});
 </script>
 
 <svelte:head>
@@ -144,18 +198,17 @@
 	<h1 class="mb-4 text-3xl font-extrabold tracking-tight">LEADS</h1>
 
 	<!-- Toolbar -->
-	<div class="mb-4 flex flex-wrap items-center gap-3 relative">
+	<div class="relative mb-4 flex flex-wrap items-center gap-3">
 		<div class="relative min-w-64 grow">
 			<SearchIcon class="absolute top-1/2 left-3 size-4 -translate-y-1/2 text-muted-foreground" />
 			<Input placeholder="SEARCH LEADS..." bind:value={searchText} class="pl-9" />
 		</div>
-		<Select.Root type="single"  name="sort" bind:value={sortBy}>
+		<Select.Root type="single" name="sort" bind:value={sortBy}>
 			<Select.Trigger class="min-w-40">
 				{sortTriggerContent}
 			</Select.Trigger>
-			<Select.Content class="min-w-40 absolute top-10">
+			<Select.Content class="absolute top-10 min-w-40">
 				<Select.Group>
-			
 					{#each sortOptions as opt}
 						<Select.Item value={opt}>{opt}</Select.Item>
 					{/each}
@@ -167,9 +220,8 @@
 			<Select.Trigger class="min-w-40">
 				{categoryTriggerContent}
 			</Select.Trigger>
-			<Select.Content class="min-w-40 absolute top-10">
+			<Select.Content class="absolute top-10 min-w-40">
 				<Select.Group>
-				
 					{#each categoryItems as c (c.value)}
 						<Select.Item value={c.value} label={c.label}>{c.label}</Select.Item>
 					{/each}
@@ -293,16 +345,73 @@
 						</div>
 
 						<div class="flex items-center gap-3">
-					{#if lead.watchlisted}
-						<Button variant="outline" class="h-8" onclick={() => toggleWatchlist(lead)}>
+							{#if lead.watchlisted}
+								<Button variant="outline" class="h-8" onclick={() => toggleWatchlist(lead)}>
 									<X class="size-4" />
 									Remove from Watchlist
 								</Button>
 							{:else}
-						<Button variant="outline" class="h-8" onclick={() => toggleWatchlist(lead)}>
+								<Button variant="outline" class="h-8" onclick={() => toggleWatchlist(lead)}>
 									+ Add to Watchlist
 								</Button>
 							{/if}
+							<Dialog.Root>
+								<Dialog.Trigger>
+									<Button variant="outline" class="h-8" onclick={() => openAssign(lead.id)}
+										>Assign</Button
+									>
+								</Dialog.Trigger>
+								<Dialog.Content>
+									<Dialog.Header>
+										<Dialog.Title>Assign Lead</Dialog.Title>
+										<Dialog.Description>
+											Select a sales representative to assign this lead to.
+										</Dialog.Description>
+									</Dialog.Header>
+									<Label class="text-sm font-medium">Sales Representative</Label>
+									<script lang="ts">
+										import * as Select from '$lib/components/ui/select/index.js';
+
+										const fruits = [
+											{ value: 'apple', label: 'Apple' },
+											{ value: 'banana', label: 'Banana' },
+											{ value: 'blueberry', label: 'Blueberry' },
+											{ value: 'grapes', label: 'Grapes' },
+											{ value: 'pineapple', label: 'Pineapple' }
+										];
+
+										let value = $state('');
+
+										const triggerContent = $derived(
+											fruits.find((f) => f.value === value)?.label ?? 'Select a fruit'
+										);
+									</script>
+
+								<Select.Root type="single" name="salesRep" bind:value={selectedRepId}>
+										<Select.Trigger class="">
+											{#if selectedRepId}
+												{reps.find((r) => r.id === selectedRepId)?.name ?? 'Select Sales Representative'}
+											{:else}
+												Select Sales Representative
+											{/if}
+										</Select.Trigger>
+										<Select.Content>
+											<Select.Group>
+												<Select.Label>Sales Reps</Select.Label>
+												{#each reps as rep (rep.id)}
+													<Select.Item
+														value={rep.id}
+														label={rep.name}
+													>
+														{rep.name}
+													</Select.Item>
+												{/each}
+											</Select.Group>
+										</Select.Content>
+									</Select.Root>
+								</Dialog.Content>
+							</Dialog.Root>
+
 							<Button variant="outline" class="h-8">Details</Button>
 						</div>
 					</div>
