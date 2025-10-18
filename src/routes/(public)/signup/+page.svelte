@@ -3,35 +3,21 @@
   import Input from '$lib/components/ui/input/input.svelte';
   import Label from '$lib/components/ui/label/label.svelte';
   import Card from '$lib/components/ui/card/card.svelte';
-  import * as Select from "$lib/components/ui/select";
   import { CardHeader, CardContent, CardFooter } from '$lib/components/ui/card';
 
   let firstName = $state('');
   let lastName = $state('');
   let email = $state('');
   let password = $state('');
-  let role = $state('OWNER');
   let error = $state<string | null>(null);
   let loading = $state(false);
-
-  const roles = [
-    { value: 'OWNER', label: 'Admin / Owner' },
-    { value: 'REP', label: 'Sales Representative' },
-    { value: 'ESTIMATOR', label: 'Estimator' },
-    { value: 'PM', label: 'Project/Production Manager' },
-    { value: 'FOREMAN', label: 'Crew Lead / Foreman' },
-    { value: 'OFFICE', label: 'Office Staff / Coordinator' },
-    { value: 'CUSTOMER', label: 'Customer / Client' }
-  ];
-
-  const triggerContent = $derived(roles.find((r) => r.value === role)?.label ?? 'Select a role');
 
   async function submit(e: SubmitEvent) {
     e.preventDefault();
     error = null;
     loading = true;
     try {
-      const res = await fetch('/api/auth/signup', { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ email, password, firstName, lastName, role }) });
+      const res = await fetch('/api/auth/signup', { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ email, password, firstName, lastName}) });
       if (!res.ok) {
         const data = await res.json().catch(() => ({}));
         error = data.error || 'Signup failed';
@@ -74,25 +60,6 @@
         <div class="space-y-2">
           <Label for="password" class="font-medium">Create password</Label>
           <Input id="password" type="password" bind:value={password} required class="w-full" />
-        </div>
-
-        <div class="space-y-2 relative w-full">
-          <Label for="role" class="font-medium">Select your role</Label>
-          <Select.Root type="single" name="role" bind:value={role}>
-            <Select.Trigger class="w-full">
-              {triggerContent}
-            </Select.Trigger>
-            <Select.Content class="absolute top-16 overflow-y-auto min-w-full max-w-40 max-h-40">
-              <Select.Group>
-              
-                {#each roles as r (r.value)}
-                  <Select.Item value={r.value} label={r.label}>
-                    {r.label}
-                  </Select.Item>
-                {/each}
-              </Select.Group>
-            </Select.Content>
-          </Select.Root>
         </div>
 
         {#if error}

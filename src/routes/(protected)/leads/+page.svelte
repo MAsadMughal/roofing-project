@@ -207,7 +207,7 @@
 			<Select.Trigger class="min-w-40">
 				{sortTriggerContent}
 			</Select.Trigger>
-			<Select.Content class="absolute top-10 min-w-40">
+			<Select.Content class="">
 				<Select.Group>
 					{#each sortOptions as opt}
 						<Select.Item value={opt}>{opt}</Select.Item>
@@ -220,7 +220,7 @@
 			<Select.Trigger class="min-w-40">
 				{categoryTriggerContent}
 			</Select.Trigger>
-			<Select.Content class="absolute top-10 min-w-40">
+			<Select.Content class="">
 				<Select.Group>
 					{#each categoryItems as c (c.value)}
 						<Select.Item value={c.value} label={c.label}>{c.label}</Select.Item>
