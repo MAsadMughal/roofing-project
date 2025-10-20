@@ -2,7 +2,6 @@
 	import { browser } from '$app/environment';
 	import { goto } from '$app/navigation';
 	import { page } from '$app/stores';
-	import Badge from '$lib/components/ui/badge/badge.svelte';
 	import Button from '$lib/components/ui/button/button.svelte';
 	import Card from '$lib/components/ui/card/card.svelte';
 	import Checkbox from '$lib/components/ui/checkbox/checkbox.svelte';
@@ -10,13 +9,9 @@
 	import Label from '$lib/components/ui/label/label.svelte';
 	import * as Select from '$lib/components/ui/select/index.js';
 	import ChevronDown from '@lucide/svelte/icons/chevron-down';
-	import Info from '@lucide/svelte/icons/info';
-	import PhoneCall from '@lucide/svelte/icons/phone-call';
 	import SearchIcon from '@lucide/svelte/icons/search';
-	import User2 from '@lucide/svelte/icons/user-2';
-	import X from '@lucide/svelte/icons/x';
+	import LeadCard from '$lib/components/leads/LeadCard.svelte';
 	const { data } = $props<{ leads: any[]; q: string; status: string; source: string }>();
-	import * as Dialog from '$lib/components/ui/dialog/index.js';
 	type Status = 'new' | 'contacted' | 'qualified' | 'lost' | 'converted';
 	type WorkType = 'Repair' | 'Replace' | 'Installation' | 'Re-Roof';
 	type SourceType =
@@ -28,7 +23,7 @@
 		| 'Email Marketing';
 
 	type Lead = any;
-	let leads: Lead[] = data.leads;
+	let leads: Lead[] = $state(Array.isArray(data.leads) ? data.leads : []);
 	const fruits = [
 		{ value: 'apple', label: 'Apple' },
 		{ value: 'banana', label: 'Banana' },
@@ -53,17 +48,7 @@
 	];
 	const sortTriggerContent = $derived(sortBy);
 
-	const categoryItems: Array<{ value: 'All' | Status; label: string }> = [
-		{ value: 'All', label: 'CATEGORY' },
-		{ value: 'new', label: 'NEW' },
-		{ value: 'contacted', label: 'CONTACTED' },
-		{ value: 'qualified', label: 'QUALIFIED' },
-		{ value: 'lost', label: 'LOST' },
-		{ value: 'converted', label: 'CONVERTED' }
-	];
-	const categoryTriggerContent = $derived(
-		categoryItems.find((c) => c.value === category)?.label ?? 'CATEGORY'
-	);
+
 
 	// Sidebar filter state
 	let watchlistOnly = $state(false);
@@ -108,12 +93,32 @@
 	let openWorkType = $state(true);
 	let openSource = $state(true);
 
-	function toggleWatchlist(lead: Lead) {
-		lead.watchlisted = !lead.watchlisted;
+	async function toggleWatchlist(lead: Lead) {
+		const next = !lead.watchlisted;
+		leads = (leads || []).map((l) => (l.id === lead.id ? { ...l, _savingWatchlist: true } : l));
+		try {
+			const res = await fetch(`/api/watchlist${next ? '' : `?leadId=${lead.id}`}`, {
+				method: next ? 'POST' : 'DELETE',
+				headers: { 'content-type': 'application/json' },
+				body: next ? JSON.stringify({ leadId: lead.id }) : undefined
+			});
+
+			if (!res.ok) throw new Error('failed');
+
+			// Update local state after successful API call
+			leads = (leads || []).map((l) => 
+				l.id === lead.id ? { ...l, watchlisted: next, _savingWatchlist: false } : l
+			);
+
+		} catch (err) {
+			// Revert on error
+			leads = (leads || []).map((l) => 
+				l.id === lead.id ? { ...l, _savingWatchlist: false } : l
+			);
+		}
 	}
 
 	// Assign modal state
-	let assignOpen = $state(false);
 	let selectedLeadId: bigint | null = $state(null);
 	let reps: Array<{ id: string; name: string; email: string }> = $state([]);
 	let selectedRepId: string | undefined = $state(undefined);
@@ -123,7 +128,6 @@
 	async function openAssign(leadId: bigint) {
 		assignError = null;
 		selectedLeadId = leadId;
-		assignOpen = true;
 		const res = await fetch('/api/users?role=REP');
 		const users = await res.json().catch(() => []);
 		reps = (users || []).map((u: any) => ({
@@ -149,7 +153,12 @@
 				assignError = out.error || 'Failed to assign lead';
 				return;
 			}
-			assignOpen = false;
+			// update local lead immutably using response if provided
+			if (out?.lead) {
+				const updated = out.lead;
+				leads = (leads || []).map((l) => (l.id === selectedLeadId ? { ...l, ...updated } : l));
+			}
+			selectedLeadId = null;
 		} finally {
 			assigning = false;
 		}
@@ -157,7 +166,7 @@
 
 	// Derived filtered list
 	const filtered = $derived(
-		leads
+		(leads || [])
 			.filter((l) => (watchlistOnly ? l.watchlisted : true))
 			.filter((l) => (category === 'All' ? true : l.status === category))
 			.filter((l) =>
@@ -216,20 +225,12 @@
 			</Select.Content>
 		</Select.Root>
 
-		<Select.Root type="single" name="category" bind:value={category}>
-			<Select.Trigger class="min-w-40">
-				{categoryTriggerContent}
-			</Select.Trigger>
-			<Select.Content class="">
-				<Select.Group>
-					{#each categoryItems as c (c.value)}
-						<Select.Item value={c.value} label={c.label}>{c.label}</Select.Item>
-					{/each}
-				</Select.Group>
-			</Select.Content>
-		</Select.Root>
-
-		<Button variant="outline" class="ml-auto h-10">GO TO WATCHLIST</Button>
+		<Button variant="outline" class="ml-auto h-10" onclick={() => goto('/leads/assigned')}
+			>See Assigned Leads</Button
+		>
+		<Button variant="outline" class="h-10" onclick={() => goto('/watchlist')}
+			>See Watchlist</Button
+		>
 	</div>
 
 	<div class="grid grid-cols-1 gap-4 md:grid-cols-[260px_minmax(0,1fr)]">
@@ -303,119 +304,18 @@
 		<!-- Lead List -->
 		<section class="space-y-4">
 			{#each filtered as lead}
-				<Card>
-					<div class="flex items-center justify-between gap-4 px-4 py-3">
-						<div class="flex items-center gap-3">
-							<div
-								class="flex size-10 items-center justify-center rounded-full border bg-secondary/50 text-muted-foreground"
-							>
-								<User2 class="size-6" />
-							</div>
-							<div>
-								<div class="text-sm font-semibold tracking-wide">
-									{(lead.first_name ?? '') + ' ' + (lead.last_name ?? '')}
-								</div>
-								<div class="text-xs text-muted-foreground">{lead.email}</div>
-							</div>
-						</div>
-						<div class="flex items-center gap-2">
-							<Badge class="border bg-muted px-2 py-1 text-[10px]"
-								>{(lead.status ?? '').toUpperCase()}</Badge
-							>
-						</div>
-					</div>
-
-					<div class="px-4 pb-3 text-sm leading-relaxed text-muted-foreground">
-						{lead.description}
-					</div>
-
-					<div
-						class="flex flex-col gap-3 border-t px-4 py-3 md:flex-row md:items-center md:justify-between"
-					>
-						<div class="flex items-center gap-2 text-sm">
-							<PhoneCall class="size-4 text-muted-foreground" />
-							<a href={`tel:${lead.phone}`} class="font-semibold">{lead.phone}</a>
-						</div>
-
-						<div class="flex items-center gap-2 text-sm text-muted-foreground">
-							<Info class="size-4" />
-							<span
-								>Source: {lead.source ?? '-'} • {String(lead.created_at ?? '').slice(0, 10)}</span
-							>
-						</div>
-
-						<div class="flex items-center gap-3">
-							{#if lead.watchlisted}
-								<Button variant="outline" class="h-8" onclick={() => toggleWatchlist(lead)}>
-									<X class="size-4" />
-									Remove from Watchlist
-								</Button>
-							{:else}
-								<Button variant="outline" class="h-8" onclick={() => toggleWatchlist(lead)}>
-									+ Add to Watchlist
-								</Button>
-							{/if}
-							<Dialog.Root>
-								<Dialog.Trigger>
-									<Button variant="outline" class="h-8" onclick={() => openAssign(lead.id)}
-										>Assign</Button
-									>
-								</Dialog.Trigger>
-								<Dialog.Content>
-									<Dialog.Header>
-										<Dialog.Title>Assign Lead</Dialog.Title>
-										<Dialog.Description>
-											Select a sales representative to assign this lead to.
-										</Dialog.Description>
-									</Dialog.Header>
-									<Label class="text-sm font-medium">Sales Representative</Label>
-									<script lang="ts">
-										import * as Select from '$lib/components/ui/select/index.js';
-
-										const fruits = [
-											{ value: 'apple', label: 'Apple' },
-											{ value: 'banana', label: 'Banana' },
-											{ value: 'blueberry', label: 'Blueberry' },
-											{ value: 'grapes', label: 'Grapes' },
-											{ value: 'pineapple', label: 'Pineapple' }
-										];
-
-										let value = $state('');
-
-										const triggerContent = $derived(
-											fruits.find((f) => f.value === value)?.label ?? 'Select a fruit'
-										);
-									</script>
-
-								<Select.Root type="single" name="salesRep" bind:value={selectedRepId}>
-										<Select.Trigger class="">
-											{#if selectedRepId}
-												{reps.find((r) => r.id === selectedRepId)?.name ?? 'Select Sales Representative'}
-											{:else}
-												Select Sales Representative
-											{/if}
-										</Select.Trigger>
-										<Select.Content>
-											<Select.Group>
-												<Select.Label>Sales Reps</Select.Label>
-												{#each reps as rep (rep.id)}
-													<Select.Item
-														value={rep.id}
-														label={rep.name}
-													>
-														{rep.name}
-													</Select.Item>
-												{/each}
-											</Select.Group>
-										</Select.Content>
-									</Select.Root>
-								</Dialog.Content>
-							</Dialog.Root>
-
-							<Button variant="outline" class="h-8">Details</Button>
-						</div>
-					</div>
-				</Card>
+				<LeadCard
+					{lead}
+					{reps}
+					role={$page?.data?.user?.role!}
+					bind:selectedRepId
+					{assigning}
+					{assignError}
+					watchlistSaving={Boolean((lead as any)._savingWatchlist)}
+					onToggleWatchlist={toggleWatchlist}
+					onOpenAssign={openAssign}
+					onAssign={assignLead}
+				/>
 			{/each}
 		</section>
 	</div>

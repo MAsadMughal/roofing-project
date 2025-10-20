@@ -8,6 +8,7 @@
 const links = [
     { label: 'DASHBOARD', href: '/' },
     { label: 'LEADS', href: '/leads', ownerOnly: true },
+    { label: 'SALES REP', href: '/rep', repOnly: true },
     { label: 'ESTIMATES', href: '/estimates' },
     { label: 'PROPOSALS', href: '/proposals' },
     { label: 'JOBS', href: '/jobs' },
@@ -44,7 +45,7 @@ const links = [
 				/>
 				<nav class="flex items-center gap-2">
                     {#if $page.data.user}
-                        {#each links.filter((l) => !l.ownerOnly || $page.data.user?.role === 'OWNER') as link}
+                        {#each links.filter((l) => (!l.ownerOnly || $page.data.user?.role === 'OWNER') && (!l.repOnly || $page.data.user?.role === 'REP')) as link}
 							<a
 								href={link.href}
 								class={`${navigationMenuTriggerStyle()} relative h-14 px-3 text-sm font-semibold ${isActive(link.href) ? 'underline decoration-2 underline-offset-[14px]' : ''}`}

@@ -1,8 +1,8 @@
 import type { PageServerLoad } from './$types';
-import { requireRole } from '$lib/server/auth';
+import { requireAuth } from '$lib/server/auth';
 
 export const load: PageServerLoad = async (event) => {
-    requireRole(event, 'OWNER');
+    requireAuth(event);
     return {};
 };
 

@@ -1,41 +1,56 @@
 import type { RequestHandler } from '@sveltejs/kit';
 import { prisma } from '$lib/server/prisma';
 import { json } from '$lib/server/json';
-import { requireRole } from '$lib/server/auth';
+import { requireAuth, requireRole } from '$lib/server/auth';
 
 export const GET: RequestHandler = async (event) => {
-    requireRole(event, 'OWNER');
+    requireAuth(event);
     const { url } = event;
 	const status = url.searchParams.get('status') ?? undefined;
 	const q = url.searchParams.get('q') ?? undefined;
 	const source = url.searchParams.get('source') ?? undefined;
+    const unassigned = url.searchParams.get('unassigned') === 'true';
+    const userId = event.locals.user!.id as unknown as bigint;
+    const user = await prisma.user.findUnique({ where: { id: userId } });
 
-	const leads = await prisma.lead.findMany({
-		where: {
-			status: status ?? undefined,
-			source: source ?? undefined,
-			OR: q
-				? [
-					{ title: { contains: q, mode: 'insensitive' } },
-					{ description: { contains: q, mode: 'insensitive' } },
-					{ customer: { is: { OR: [
-						{ firstName: { contains: q, mode: 'insensitive' } },
-						{ lastName: { contains: q, mode: 'insensitive' } }
-					] } } }
-				]
-				: undefined
-		},
-		include: { customer: { select: { firstName: true, lastName: true, email: true, phone: true } } },
-		orderBy: { createdAt: 'desc' },
-		take: 100
-	});
-	return json(leads.map((l) => ({
-		...l,
-		first_name: l.customer?.firstName,
-		last_name: l.customer?.lastName,
-		email: l.customer?.email,
-		phone: l.customer?.phone
-	})));
+    const isRep = (event.locals.user?.role === 'REP');
+    const whereBase: any = {
+        status: status ?? undefined,
+        source: source ?? undefined,
+        OR: q
+            ? [
+                { title: { contains: q, mode: 'insensitive' } },
+                { description: { contains: q, mode: 'insensitive' } },
+                { customer: { is: { OR: [
+                    { firstName: { contains: q, mode: 'insensitive' } },
+                    { lastName: { contains: q, mode: 'insensitive' } }
+                ] } } }
+            ]
+            : undefined
+    };
+
+    if (unassigned) {
+        whereBase.assignments = { none: {} };
+    }
+
+    const leads = await prisma.lead.findMany({
+        where: isRep ? { ...whereBase, assignments: { some: { assignedToId: userId } } } : whereBase,
+        include: {
+            customer: { select: { firstName: true, lastName: true, email: true, phone: true } },
+            assignments: isRep ? { where: { assignedToId: userId }, orderBy: { assignedAt: 'desc' }, take: 1 } : false
+        },
+        orderBy: { createdAt: 'desc' },
+        take: 100
+    });
+    return json(leads.map((l: any) => ({
+        ...l,
+        first_name: l.customer?.firstName,
+        last_name: l.customer?.lastName,
+        email: l.customer?.email,
+        phone: l.customer?.phone,
+        viewer_assignment: Array.isArray(l.assignments) && l.assignments.length > 0 ? l.assignments[0] : null,
+        watchlisted: ((user as any)?.watchlistLeadIds ?? []).includes(l.id)
+    })));
 };
 
 export const POST: RequestHandler = async (event) => {

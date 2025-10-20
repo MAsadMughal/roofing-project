@@ -9,6 +9,7 @@ export const load: PageLoad = async ({ fetch, url }) => {
 	if (q) params.set('q', q);
 	if (status) params.set('status', status);
 	if (source) params.set('source', source);
+	params.set('unassigned', 'true');
 
 	const res = await fetch(`/api/leads${params.toString() ? `?${params.toString()}` : ''}`);
 	const leads = await res.json();
