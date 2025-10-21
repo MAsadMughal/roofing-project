@@ -3,6 +3,7 @@
   import Input from '$lib/components/ui/input/input.svelte';
   import Label from '$lib/components/ui/label/label.svelte';
   import Card from '$lib/components/ui/card/card.svelte';
+	import { goto } from '$app/navigation';
 
   let email = '';
   let password = '';
@@ -20,9 +21,7 @@
         error = data.error || 'Login failed';
         return;
       }
-      window.location.href = window.location.search.includes('redirectTo') 
-        ? decodeURIComponent(new URLSearchParams(window.location.search).get('redirectTo') || '/')
-        : '/';
+      await goto('/');
     } finally {
       loading = false;
     }
