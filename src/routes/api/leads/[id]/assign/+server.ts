@@ -24,7 +24,8 @@ export const POST: RequestHandler = async (event) => {
     // Check if lead is already assigned to this user
     const existingAssignment = await prisma.assignment.findFirst({
         where: {
-            leadId
+            leadId,
+            ownerId: event.locals.user!.id as unknown as bigint
         }
     });
 

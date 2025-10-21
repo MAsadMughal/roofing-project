@@ -1,14 +1,7 @@
-<script lang="ts" module>
-  import type { Snippet } from "svelte";
-  export type DropdownMenuGroupProps = { children?: Snippet };
-</script>
-
 <script lang="ts">
-  let { children }: DropdownMenuGroupProps = $props();
+	import { DropdownMenu as DropdownMenuPrimitive } from "bits-ui";
+
+	let { ref = $bindable(null), ...restProps }: DropdownMenuPrimitive.GroupProps = $props();
 </script>
 
-<div role="group" class="py-1">
-  {@render children?.()}
-</div>
-
-
+<DropdownMenuPrimitive.Group bind:ref data-slot="dropdown-menu-group" {...restProps} />

@@ -1,13 +1,24 @@
-<script lang="ts" module>
-  export type DropdownMenuLabelProps = { children?: any };
-</script>
-
 <script lang="ts">
-  let { children }: DropdownMenuLabelProps = $props();
+	import { cn, type WithElementRef } from "$lib/utils.js";
+	import type { HTMLAttributes } from "svelte/elements";
+
+	let {
+		ref = $bindable(null),
+		class: className,
+		inset,
+		children,
+		...restProps
+	}: WithElementRef<HTMLAttributes<HTMLDivElement>> & {
+		inset?: boolean;
+	} = $props();
 </script>
 
-<div class="px-2 py-1.5 text-xs font-medium text-muted-foreground">
-  {@render children?.()}
+<div
+	bind:this={ref}
+	data-slot="dropdown-menu-label"
+	data-inset={inset}
+	class={cn("px-2 py-1.5 text-sm font-semibold data-[inset]:pl-8", className)}
+	{...restProps}
+>
+	{@render children?.()}
 </div>
-
-

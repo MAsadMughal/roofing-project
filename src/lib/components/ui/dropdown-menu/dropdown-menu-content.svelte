@@ -1,26 +1,27 @@
-<script lang="ts" module>
-  import { cn } from "$lib/utils.js";
-  export type DropdownMenuContentProps = { class?: string; children?: any };
-</script>
-
 <script lang="ts">
-  import { getContext } from "svelte";
-  import { fade, scale } from "svelte/transition";
-  const ctx = getContext<any>("dropdown-ctx");
-  let { class: className, children }: DropdownMenuContentProps = $props();
+	import { cn } from "$lib/utils.js";
+	import { DropdownMenu as DropdownMenuPrimitive } from "bits-ui";
+
+	let {
+		ref = $bindable(null),
+		sideOffset = 4,
+		portalProps,
+		class: className,
+		...restProps
+	}: DropdownMenuPrimitive.ContentProps & {
+		portalProps?: DropdownMenuPrimitive.PortalProps;
+	} = $props();
 </script>
 
-{#if ctx.open}
-<div in:fade={{ duration: 120 }} out:fade={{ duration: 100 }}>
-  <div
-    class={cn("z-50 mt-2 min-w-40 rounded-md border bg-popover p-1 text-popover-foreground shadow-md origin-top-left will-change-[transform,opacity]", className)}
-    role="menu"
-    in:scale={{ duration: 120, start: 0.98 }}
-    out:scale={{ duration: 100, start: 1 }}
-  >
-    {@render children?.()}
-  </div>
-</div>
-{/if}
-
-
+<DropdownMenuPrimitive.Portal {...portalProps}>
+	<DropdownMenuPrimitive.Content
+		bind:ref
+		data-slot="dropdown-menu-content"
+		{sideOffset}
+		class={cn(
+			"bg-popover text-popover-foreground data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0 data-[state=closed]:zoom-out-95 data-[state=open]:zoom-in-95 data-[side=bottom]:slide-in-from-top-2 data-[side=left]:slide-in-from-right-2 data-[side=right]:slide-in-from-left-2 data-[side=top]:slide-in-from-bottom-2 max-h-(--bits-dropdown-menu-content-available-height) origin-(--bits-dropdown-menu-content-transform-origin) z-50 min-w-[8rem] overflow-y-auto overflow-x-hidden rounded-md border p-1 shadow-md outline-none",
+			className
+		)}
+		{...restProps}
+	/>
+</DropdownMenuPrimitive.Portal>
