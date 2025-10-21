@@ -20,7 +20,9 @@
         error = data.error || 'Login failed';
         return;
       }
-      window.location.href = '/';
+      window.location.href = window.location.search.includes('redirectTo') 
+        ? decodeURIComponent(new URLSearchParams(window.location.search).get('redirectTo') || '/')
+        : '/';
     } finally {
       loading = false;
     }
