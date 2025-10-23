@@ -12,6 +12,7 @@ export const GET: RequestHandler = async (event) => {
     const unassigned = url.searchParams.get('unassigned') === 'true';
     const userId = event.locals.user!.id as unknown as bigint;
     const user = await prisma.user.findUnique({ where: { id: userId } });
+    const ownerContractorId = (user?.contractorId ?? user?.id) as unknown as bigint;
 
     const isRep = (event.locals.user?.role === 'REP');
     const whereBase: any = {
@@ -37,20 +38,50 @@ export const GET: RequestHandler = async (event) => {
         where: isRep ? { ...whereBase, assignments: { some: { assignedToId: userId } } } : whereBase,
         include: {
             customer: { select: { firstName: true, lastName: true, email: true, phone: true } },
-            assignments: isRep ? { where: { assignedToId: userId }, orderBy: { assignedAt: 'desc' }, take: 1 } : false
+            // For reps: include their latest assignment
+            // For owners: include latest assignment created by them (to compute assigned flag)
+            assignments: isRep
+                ? { where: { assignedToId: userId }, orderBy: { assignedAt: 'desc' }, take: 1 }
+                : {
+                    where: {
+                        OR: [
+                            { ownerId: ownerContractorId },
+                            { owner: { contractorId: ownerContractorId } }
+                        ]
+                    },
+                    orderBy: { assignedAt: 'desc' },
+                    take: 1,
+                    include: { assignedTo: { select: { id: true, firstName: true, lastName: true, email: true } } }
+                }
         },
         orderBy: { createdAt: 'desc' },
         take: 100
     });
-    return json(leads.map((l: any) => ({
-        ...l,
-        first_name: l.customer?.firstName,
-        last_name: l.customer?.lastName,
-        email: l.customer?.email,
-        phone: l.customer?.phone,
-        viewer_assignment: Array.isArray(l.assignments) && l.assignments.length > 0 ? l.assignments[0] : null,
-        watchlisted: ((user as any)?.watchlistLeadIds ?? []).includes(l.id)
-    })));
+    return json(leads.map((l: any) => {
+        const viewerAssignment = Array.isArray(l.assignments) && l.assignments.length > 0 ? l.assignments[0] : null;
+        const assigned = !isRep && viewerAssignment != null; // owner perspective
+        // Build assigned_to metadata for owners
+        const assignedToMeta = viewerAssignment?.assignedTo
+            ? {
+                id: viewerAssignment.assignedTo.id,
+                first_name: viewerAssignment.assignedTo.firstName,
+                last_name: viewerAssignment.assignedTo.lastName,
+                email: viewerAssignment.assignedTo.email
+            }
+            : null;
+
+        return {
+            ...l,
+            first_name: l.customer?.firstName,
+            last_name: l.customer?.lastName,
+            email: l.customer?.email,
+            phone: l.customer?.phone,
+            viewer_assignment: isRep ? viewerAssignment : null,
+            assigned: assigned,
+            assigned_to: assignedToMeta,
+            watchlisted: ((user as any)?.watchlistLeadIds ?? []).includes(l.id)
+        };
+    }));
 };
 
 export const POST: RequestHandler = async (event) => {

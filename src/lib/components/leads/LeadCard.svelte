@@ -167,12 +167,13 @@
 					{lead.watchlisted ? 'Remove from Watchlist' : 'Add to Watchlist'}
 				</Button>
 			
-				<Dialog.Root>
-					<Dialog.Trigger>
-						<Button variant="outline" class="h-8" onclick={() => onOpenAssign(lead.id)}
-							>Assign</Button
-						>
-					</Dialog.Trigger>
+                {#if !lead.assigned}
+                <Dialog.Root>
+                    <Dialog.Trigger>
+                        <Button variant="outline" class="h-8" onclick={() => onOpenAssign(lead.id)}
+                            >Assign</Button
+                        >
+                    </Dialog.Trigger>
 					<Dialog.Content>
 						<Dialog.Header>
 							<Dialog.Title>Assign Lead</Dialog.Title>
@@ -226,7 +227,10 @@
 							</Button>
 						</Dialog.Footer>
 					</Dialog.Content>
-				</Dialog.Root>
+                </Dialog.Root>
+                {:else}
+                    <Badge class="border bg-muted px-2 py-1 text-[10px]">ASSIGNED{#if lead.assigned_to} • {(lead.assigned_to.first_name ?? '') + ' ' + (lead.assigned_to.last_name ?? '')}{/if}</Badge>
+                {/if}
 			{/if}
 
 			{#if assignment}

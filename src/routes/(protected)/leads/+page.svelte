@@ -14,7 +14,7 @@
 	import SearchIcon from '@lucide/svelte/icons/search';
 	import FilterIcon from '@lucide/svelte/icons/filter';
 
-	const { data } = $props<{ leads: any[]; q: string; status: string; source: string }>();
+const { data } = $props<{ leads: any[]; q: string; status: string; source: string; unassigned?: string }>();
 
 	type Status = 'new' | 'contacted' | 'qualified' | 'lost' | 'converted';
 	type WorkType = 'Repair' | 'Replace' | 'Installation' | 'Re-Roof';
@@ -34,6 +34,9 @@
 	let searchText = $state(data.q || '');
 	let sortBy: 'Newest' | 'Oldest' | 'Name' | 'Source' = $state('Newest');
 	const sortOptions = ['Newest', 'Oldest', 'Name', 'Source'] as const;
+
+// Unassigned-only server filter
+let unassignedOnly = $state(Boolean(data.unassigned));
 
 	// Combined filters state
 	let filters: any = $state({
@@ -78,6 +81,8 @@
 		else params.delete('q');
 		if (filters.category !== 'All') params.set('status', filters.category);
 		else params.delete('status');
+    if (unassignedOnly) params.set('unassigned', 'true');
+    else params.delete('unassigned');
 		const nextSearch = params.toString() ? `?${params.toString()}` : '';
 		const currentSearch = $page.url.search;
 		const path = $page.url.pathname;
@@ -193,6 +198,10 @@
 			</div>
 			<Button type="submit" variant="outline" class="!h-9.5">Search</Button>
 		</form>
+		<Label class="flex items-center gap-2 text-sm">
+			<Checkbox bind:checked={unassignedOnly} onchange={applyFilters} />
+			Unassigned only
+		</Label>
 		<Select.Root type="single" name="sort" bind:value={sortBy}>
 			<Select.Trigger class="min-w-40">
 				{sortBy}

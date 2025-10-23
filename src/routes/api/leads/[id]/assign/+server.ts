@@ -21,20 +21,29 @@ export const POST: RequestHandler = async (event) => {
     if ((user.contractorId ?? user.id) !== ownerContractorId) {
         return json({ error: 'User is not in your organization' }, { status: 403 });
     }
-    // Check if lead is already assigned to this user
+    // Check if lead is already assigned within your organization
     const existingAssignment = await prisma.assignment.findFirst({
         where: {
             leadId,
-            ownerId: event.locals.user!.id as unknown as bigint
+            owner: {
+                contractorId: ownerContractorId
+            }
         }
     });
 
     if (existingAssignment) {
-        return json({ error: 'Lead is already assigned to Sales Representative' }, { status: 400 });
+        return json({ error: 'Lead is already assigned in your organization' }, { status: 400 });
     }
 
     // Create assignment row with owner -> sales rep for this lead
     const ownerId = event.locals.user!.id as unknown as bigint;
+    const initialEvent = {
+        type: 'salesRepAssigned',
+        assignee: { id: BigInt(userId), name: `${user.firstName ?? ''} ${user.lastName ?? ''}`.trim() },
+        assignor: { id: ownerId, name: `${event.locals.user?.firstName ?? ''} ${event.locals.user?.lastName ?? ''}`.trim() },
+        at: new Date().toISOString(),
+    } as const;
+
     const assignment = await prisma.assignment.create({
         data: {
             leadId,
@@ -42,7 +51,8 @@ export const POST: RequestHandler = async (event) => {
             assignedToId: BigInt(userId),
             role: 'Sales Rep',
             status: 'assigned',
-            lastStatusChangedAt: new Date()
+            lastStatusChangedAt: new Date(),
+            history: [initialEvent] as any
         }
     });
 
@@ -52,7 +62,20 @@ export const POST: RequestHandler = async (event) => {
         data: { assignedUserId: BigInt(userId), updatedAt: new Date() }
     });
 
-    return json({ ok: true, lead: updated, assignment });
+    return json({
+        ok: true,
+        lead: {
+            ...updated,
+            assigned: true,
+            assigned_to: {
+                id: user.id,
+                first_name: user.firstName,
+                last_name: user.lastName,
+                email: user.email
+            }
+        },
+        assignment
+    });
 };
 
 

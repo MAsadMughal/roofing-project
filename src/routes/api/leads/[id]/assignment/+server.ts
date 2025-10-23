@@ -54,7 +54,40 @@ export const PATCH: RequestHandler = async (event) => {
         data.laborIds = laborIds.map((v: any) => BigInt(v));
     }
 
-    const updated = await prisma.assignment.update({ where: { id: current.id }, data });
+    // Build history event
+    let historyEvent: any | null = null;
+    if (status && status !== (current as any).status) {
+        const assignor = { id: user.id, name: `${user.firstName ?? ''} ${user.lastName ?? ''}`.trim() };
+        const assignedTo = await prisma.user.findUnique({ where: { id: current.assignedToId } }).catch(() => null);
+        if (status === 'assigned') {
+            historyEvent = {
+                type: 'statusAssigned',
+                assignor,
+                assignee: { id: current.assignedToId, name: `${assignedTo?.firstName ?? ''} ${assignedTo?.lastName ?? ''}`.trim() },
+                at: new Date().toISOString()
+            };
+        } else if (status === 'in_contact') {
+            historyEvent = { type: 'inContact', assignor, at: new Date().toISOString() };
+        } else if (status === 'inspection_scheduled') {
+            historyEvent = {
+                type: 'inspectionScheduled',
+                assignor,
+                assignee: Array.isArray(laborIds) ? laborIds.map((id: any) => ({ id: BigInt(id) })) : [],
+                at: new Date().toISOString(),
+                date: inspectionDate || null
+            };
+        } else if (status === 'closed') {
+            historyEvent = { type: 'closed', assignor, at: new Date().toISOString() };
+        }
+    }
+
+    const updated = await prisma.assignment.update({
+        where: { id: current.id },
+        data: {
+            ...data,
+            history: historyEvent ? [...(current.history as any[] ?? []), historyEvent] as any : (current.history as any)
+        }
+    });
 
     // Optional: sync lead.assigned_user_id if status is assigned/in_contact (owner choice)
     if (status && (status === 'assigned' || status === 'in_contact')) {
