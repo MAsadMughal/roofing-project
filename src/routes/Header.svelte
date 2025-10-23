@@ -42,7 +42,6 @@
 	function isActive(path: string) {
 		return $page.url.pathname === path;
 	}
-	console.log($page.data);
 	function getInitial(): string {
 		const u = $page.data.user;
 		if (!u) return '';
@@ -59,9 +58,9 @@
 </script>
 
 <header
-	class="sticky top-0 z-40 w-full border-b border-slate-200 font-sans shadow-sm backdrop-blur-md transition-all "
+	class="sticky top-0 z-40 w-full border-b border-slate-200 font-sans shadow-sm backdrop-blur-md transition-all"
 >
-	<div class="mx-auto w-full  px-4">
+	<div class="mx-auto w-full px-4">
 		<div class="flex h-16 items-center justify-between">
 			<!-- Left: Logo + Nav -->
 			<div class="flex items-center gap-6">
@@ -79,7 +78,7 @@
 								class={`relative px-3 py-2 text-[15px] font-medium tracking-wide transition-all hover:text-indigo-400 ${
 									isActive(link.href)
 										? 'font-semibold text-indigo-400 after:absolute after:bottom-0 after:left-0 after:h-0.5 after:w-full after:rounded-full after:bg-gradient-to-r after:from-indigo-400 after:to-violet-400 after:content-[""]'
-										: 'text-slate-600 dark:text-slate-200 hover:text-indigo-400'
+										: 'text-slate-600 hover:text-indigo-400 dark:text-slate-200'
 								}`}
 							>
 								{link.label}
@@ -169,8 +168,14 @@
 						</DropdownMenu.Content>
 					</DropdownMenu.Root>
 				{:else}
-					<Button href="/login" class="bg-indigo-600 cursor-pointer text-white hover:bg-indigo-500">Login</Button>
-					<Button href="/signup" variant="outline" class="border-indigo-600 cursor-pointer hover:bg-transparent hover:text-indigo-600 text-indigo-600 ">
+					<Button href="/login" class="cursor-pointer bg-indigo-600 text-white hover:bg-indigo-500"
+						>Login</Button
+					>
+					<Button
+						href="/signup"
+						variant="outline"
+						class="cursor-pointer border-indigo-600 text-indigo-600 hover:bg-transparent hover:text-indigo-600 "
+					>
 						Signup
 					</Button>
 				{/if}
