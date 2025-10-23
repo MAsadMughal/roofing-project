@@ -115,31 +115,31 @@
 						</DropdownMenu.Trigger>
 
 						<DropdownMenu.Content
-							class="min-w-56 rounded-xl border border-slate-200 bg-white/90 shadow-lg backdrop-blur-md"
+							class="min-w-56 rounded-xl border border-slate-200 shadow-lg backdrop-blur-3xl"
 							align="end"
 						>
-							<DropdownMenu.Label class="mb-1 font-semibold text-slate-800"
+							<DropdownMenu.Label class="mb-1 font-bold text-slate-800 dark:text-white"
 								>My Account</DropdownMenu.Label
 							>
 							<DropdownMenu.Group>
 								<DropdownMenu.Item
-									class="flex items-center gap-2 text-slate-700 hover:text-indigo-600"
+									class="flex items-center font-semibold dark:text-white cursor-pointer gap-2 text-slate-700 hover:text-indigo-600"
 								>
-									<UserRound class="h-4 w-4 text-slate-500" />
+									<UserRound class="h-4 w-4 text-slate-500 dark:text-white" />
 									<span>View Profile</span>
 								</DropdownMenu.Item>
 								<DropdownMenu.Item
 									onclick={() => goto('/change-password')}
-									class="flex items-center gap-2 text-slate-700 hover:text-indigo-600"
+									class="flex items-center font-semibold dark:text-white cursor-pointer gap-2 text-slate-700 hover:text-indigo-600"
 								>
-									<Key class="h-4 w-4 text-slate-500" />
+									<Key class="h-4 w-4 text-slate-500 dark:text-white" />
 									<span>Change Password</span>
 								</DropdownMenu.Item>
 								<DropdownMenu.Item
 									onclick={() => logout()}
-									class="flex items-center gap-2 text-red-600 hover:text-red-700"
+									class="flex items-center font-semibold  cursor-pointer gap-2 text-red-600 hover:text-red-700"
 								>
-									<LogOut class="h-4 w-4" />
+									<LogOut class="h-4 w-4 " />
 									<span>Sign Out</span>
 								</DropdownMenu.Item>
 							</DropdownMenu.Group>
@@ -147,21 +147,21 @@
 							<DropdownMenu.Separator class="my-1 border-slate-200" />
 
 							<DropdownMenu.Group>
-								<DropdownMenu.Label class="mb-1 font-semibold text-slate-800"
+								<DropdownMenu.Label class="mb-1 font-bold text-slate-800 dark:text-white"
 									>Organization</DropdownMenu.Label
 								>
 								<DropdownMenu.Item
 									onclick={() => goto('/members')}
-									class="flex items-center gap-2 text-slate-700 hover:text-indigo-600"
+									class="flex items-center font-semibold dark:text-white cursor-pointer gap-2 text-slate-700 hover:text-indigo-600"
 								>
-									<UserPlus class="h-4 w-4 text-slate-500" />
+									<UserPlus class="h-4 w-4 text-slate-500 dark:text-white" />
 									<span>Invite Members</span>
 								</DropdownMenu.Item>
 								<DropdownMenu.Item
 									onclick={() => goto('/leads')}
-									class="flex items-center gap-2 text-slate-700 hover:text-indigo-600"
+									class="flex items-center font-semibold dark:text-white cursor-pointer gap-2 text-slate-700 hover:text-indigo-600"
 								>
-									<ListOrdered class="h-4 w-4 text-slate-500" />
+									<ListOrdered class="h-4 w-4 text-slate-500 dark:text-white" />
 									<span>View Assigned Leads</span>
 								</DropdownMenu.Item>
 							</DropdownMenu.Group>

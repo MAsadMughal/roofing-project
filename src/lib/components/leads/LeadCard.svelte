@@ -39,10 +39,11 @@
     }>();
 
 	// Status change UI for reps: derive the viewer's assignment if present on the lead
-    const assignment = $derived((lead as any).viewer_assignment ?? null);
-	let nextStatus: 'assigned' | 'in_contact' | 'inspection_scheduled' | 'closed' = $state(
-		assignment?.status ?? 'assigned'
-	);
+	const assignment = $derived((lead as any).viewer_assignment ?? null);
+	let nextStatus: 'assigned' | 'in_contact' | 'inspection_scheduled' | 'closed' = $state('assigned');
+	$effect(() => {
+		nextStatus = (assignment?.status ?? 'assigned') as typeof nextStatus;
+	});
 	let savingStatus = $state(false);
 	let statusError: string | null = $state(null);
     let statusDialogOpen = $state(false);
@@ -284,7 +285,7 @@
                                 {:else}
                                     {#each inspectors as ins (ins.id)}
                                         <Label class="flex items-center gap-2 text-sm">
-                                            <Checkbox checked={selectedInspectorIds.includes(ins.id)} on:change={(e: any) => {
+                                            <Checkbox checked={selectedInspectorIds.includes(ins.id)} onchange={(e: any) => {
                                                 const checked = e.detail;
                                                 selectedInspectorIds = checked
                                                     ? Array.from(new Set([...selectedInspectorIds, ins.id]))

@@ -10,6 +10,7 @@
 	import Input from '$lib/components/ui/input/input.svelte';
 	import Label from '$lib/components/ui/label/label.svelte';
 	import * as Select from '$lib/components/ui/select/index.js';
+	import * as Dialog from '$lib/components/ui/dialog';
 	import SearchIcon from '@lucide/svelte/icons/search';
 	import FilterIcon from '@lucide/svelte/icons/filter';
 
@@ -35,7 +36,7 @@
 	const sortOptions = ['Newest', 'Oldest', 'Name', 'Source'] as const;
 
 	// Combined filters state
-	let filters = $state({
+	let filters: any = $state({
 		watchlistOnly: false,
 		category: (data.status as Status | 'All') || 'All',
 		status: {
@@ -184,8 +185,8 @@
 	<h1 class="mb-4 text-3xl font-extrabold tracking-tight">LEADS</h1>
 
 	<!-- Toolbar -->
-	<div class="relative mb-4 flex flex-wrap items-center gap-3 justify-center">
-		<form class="relative flex min-w-64 grow gap-2" on:submit={handleSearch}>
+	<div class="relative mb-4 flex flex-wrap items-center justify-center gap-3">
+		<form class="relative flex min-w-64 grow gap-2" onsubmit={handleSearch}>
 			<div class="relative grow">
 				<SearchIcon class="text-muted-foreground absolute top-1/2 left-3 size-4 -translate-y-1/2" />
 				<Input placeholder="SEARCH LEADS..." bind:value={searchInput} class="pl-9" />
@@ -205,106 +206,157 @@
 			</Select.Content>
 		</Select.Root>
 
+		<Dialog.Root>
+			<Dialog.Trigger>
+				<Button variant="outline" class="relative h-10">
+					<FilterIcon class="mr-2 size-4" />
+					Filters
+					{#if Object.values(filters).some((category: any) => Object.values(category).some(Boolean))}
+						<div
+							class="absolute -top-1.5 -right-1.5 size-3 rounded-full border-2 bg-blue-700"
+						></div>
+					{/if}
+				</Button>
+			</Dialog.Trigger>
+			<Dialog.Content class="max-w-md">
+				<Dialog.Header>
+					<Dialog.Title>Filters</Dialog.Title>
+					<Dialog.Description>Filter leads by status, work type and source</Dialog.Description>
+				</Dialog.Header>
+
+				<div class="max-h-[70vh] overflow-y-auto rounded-b-lg border-b">
+					<Accordion.Root type="multiple" class="space-y-2">
+						<!-- Status -->
+						<Accordion.Item value="status" class="rounded-lg border">
+							<Accordion.Trigger class="flex w-full items-center justify-between p-4">
+								<div class="relative">
+									<span class="font-semibold">Status</span>
+									<div
+										class="absolute -top-1 -right-4 flex size-4 items-center justify-center rounded-full bg-red-500 text-[10px] font-medium text-primary-foreground"
+									>
+										{Object.entries(filters.status).filter(([, v]) => v).length}
+									</div>
+								</div>
+							</Accordion.Trigger>
+							<Accordion.Content class="border-t px-4 pb-4">
+								<div class="space-y-2 pt-2">
+									{#each Object.entries(filters.status) as [status, checked]}
+										<Label
+											class="flex cursor-pointer items-center gap-2 rounded p-1 text-sm hover:bg-accent/50"
+										>
+											<Checkbox
+												bind:checked={filters.status[status as Status]}
+												class="data-[state=checked]:border-primary data-[state=checked]:bg-primary"
+											/>
+											{status.toUpperCase()}
+										</Label>
+									{/each}
+								</div>
+							</Accordion.Content>
+						</Accordion.Item>
+
+						<!-- Work Type -->
+						<Accordion.Item value="workType" class="rounded-lg border">
+							<Accordion.Trigger class="flex w-full items-center justify-between p-4">
+								<div class="relative">
+									<span class="font-semibold">Work Type</span>
+									<div
+										class="absolute -top-1 -right-4 flex size-4 items-center justify-center rounded-full bg-red-500 text-[10px] font-medium text-primary-foreground"
+									>
+										{Object.entries(filters.workType).filter(([, v]) => v).length}
+									</div>
+								</div>
+							</Accordion.Trigger>
+							<Accordion.Content class="border-t px-4 pb-4">
+								<div class="space-y-2 pt-2">
+									{#each Object.entries(filters.workType) as [type, checked]}
+										<Label
+											class="flex cursor-pointer items-center gap-2 rounded p-1 text-sm hover:bg-accent/50"
+										>
+											<Checkbox
+												bind:checked={filters.workType[type as WorkType]}
+												class="data-[state=checked]:border-primary data-[state=checked]:bg-primary"
+											/>
+											{type}
+										</Label>
+									{/each}
+								</div>
+							</Accordion.Content>
+						</Accordion.Item>
+
+						<!-- Source -->
+						<Accordion.Item value="source" class="rounded-lg border-1 ">
+							<Accordion.Trigger class="flex w-full items-center justify-between p-4">
+								<div class="relative">
+									<span class="font-semibold">Source</span>
+									<div
+										class="absolute -top-1 -right-4 flex size-4 items-center justify-center rounded-full bg-red-500 text-[10px] font-medium text-primary-foreground"
+									>
+										{Object.entries(filters.source).filter(([, v]) => v).length}
+									</div>
+								</div>
+							</Accordion.Trigger>
+							<Accordion.Content class="border-t px-4 pb-4">
+								<div class="space-y-2 pt-2">
+									{#each Object.entries(filters.source) as [source, checked]}
+										<Label
+											class="flex cursor-pointer items-center gap-2 rounded p-1 text-sm hover:bg-accent/50"
+										>
+											<Checkbox
+												bind:checked={filters.source[source as SourceType]}
+												class="data-[state=checked]:border-primary data-[state=checked]:bg-primary"
+											/>
+											{source}
+										</Label>
+									{/each}
+								</div>
+							</Accordion.Content>
+						</Accordion.Item>
+					</Accordion.Root>
+				</div>
+
+				<Dialog.Footer class="mt-6 flex justify-between">
+					<Button
+						variant="outline"
+						onclick={() => {
+							Object.keys(filters).forEach((category) => {
+								Object.keys(filters[category]).forEach((key) => {
+									filters[category][key] = false;
+								});
+							});
+							applyFilters();
+						}}
+					>
+						Reset Filters
+					</Button>
+					<Dialog.Close>
+						<Button onclick={applyFilters}>Apply Filters</Button>
+					</Dialog.Close>
+				</Dialog.Footer>
+			</Dialog.Content>
+		</Dialog.Root>
+
 		<Button variant="outline" class="ml-auto h-10" onclick={() => goto('/leads/assigned')}
 			>See Assigned Leads</Button
 		>
 		<Button variant="outline" class="h-10" onclick={() => goto('/watchlist')}>See Watchlist</Button>
 	</div>
 
-	<div class="grid grid-cols-1 gap-4 md:grid-cols-[260px_minmax(0,1fr)]">
-		<!-- Sidebar Filters -->
-		<Card class="sticky top-18 max-h-min p-3 md:p-4">
-			<div class="mb-2 flex items-center justify-between">
-				<span class="text-lg font-extrabold">FILTERS</span>
-				<Button
-					variant="outline"
-					size="icon"
-					class="h-8 w-8 cursor-pointer text-white"
-					on:click={applyFilters}
-				>
-					<FilterIcon class="size-4" />
-				</Button>
-			</div>
-
-			<Accordion.Root type="multiple">
-				<!-- Status -->
-				<Accordion.Item value="status">
-					<Accordion.Trigger class="flex w-full items-center justify-between py-2 font-semibold">
-						<span class="text-sm">STATUS</span>
-					</Accordion.Trigger>
-					<Accordion.Content>
-						<div class="space-y-2 pl-2">
-							{#each Object.entries(filters.status) as [status, checked]}
-								<Label class="flex items-center gap-2 text-sm">
-									<Checkbox
-										bind:checked={filters.status[status as Status]}
-										class="data-[state=checked]:border-purple-800 data-[state=checked]:bg-purple-800"
-									/>
-									{status.toUpperCase()}
-								</Label>
-							{/each}
-						</div>
-					</Accordion.Content>
-				</Accordion.Item>
-
-				<!-- Work Type -->
-				<Accordion.Item value="workType">
-					<Accordion.Trigger class="flex w-full items-center justify-between py-2 font-semibold">
-						<span class="text-sm">WORK TYPE</span>
-					</Accordion.Trigger>
-					<Accordion.Content>
-						<div class="space-y-2 pl-2">
-							{#each Object.entries(filters.workType) as [type, checked]}
-								<Label class="flex items-center gap-2 text-sm">
-									<Checkbox
-										bind:checked={filters.workType[type as WorkType]}
-										class="data-[state=checked]:border-purple-800 data-[state=checked]:bg-purple-800"
-									/>
-									{type}
-								</Label>
-							{/each}
-						</div>
-					</Accordion.Content>
-				</Accordion.Item>
-
-				<!-- Source -->
-				<Accordion.Item value="source">
-					<Accordion.Trigger class="flex w-full items-center justify-between py-2 font-semibold">
-						<span class="text-sm">SOURCE</span>
-					</Accordion.Trigger>
-					<Accordion.Content>
-						<div class="space-y-2 pl-2">
-							{#each Object.entries(filters.source) as [source, checked]}
-								<Label class="flex items-center gap-2 text-sm">
-									<Checkbox
-										bind:checked={filters.source[source as SourceType]}
-										class="data-[state=checked]:border-purple-800 data-[state=checked]:bg-purple-800"
-									/>
-									{source}
-								</Label>
-							{/each}
-						</div>
-					</Accordion.Content>
-				</Accordion.Item>
-			</Accordion.Root>
-		</Card>
-
-		<!-- Lead List -->
-		<section class="space-y-4">
-			{#each filtered as lead}
-				<LeadCard
-					{lead}
-					{reps}
-					role={$page?.data?.user?.role!}
-					bind:selectedRepId
-					{assigning}
-					{assignError}
-					watchlistSaving={Boolean(lead._savingWatchlist)}
-					onToggleWatchlist={toggleWatchlist}
-					onOpenAssign={openAssign}
-					onAssign={assignLead}
-				/>
-			{/each}
-		</section>
-	</div>
+	<!-- Lead List -->
+	<section class="max-h-[calc(100vh-258px)] space-y-4 overflow-y-scroll">
+		{#each filtered as lead}
+			<LeadCard
+				{lead}
+				{reps}
+				role={$page?.data?.user?.role!}
+				bind:selectedRepId
+				{assigning}
+				{assignError}
+				watchlistSaving={Boolean(lead._savingWatchlist)}
+				onToggleWatchlist={toggleWatchlist}
+				onOpenAssign={openAssign}
+				onAssign={assignLead}
+			/>
+		{/each}
+	</section>
 </div>
