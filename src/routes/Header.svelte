@@ -30,7 +30,7 @@
 	}
 
 	const links = [
-		{ label: 'DASHBOARD', href: '/' },
+		{ label: 'DASHBOARD', href: '/dashboard' },
 		{ label: 'LEADS', href: '/leads', ownerOnly: true },
 		{ label: 'SALES REP', href: '/rep', repOnly: true },
 		{ label: 'ESTIMATES', href: '/estimates' },

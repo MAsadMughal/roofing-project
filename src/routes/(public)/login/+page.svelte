@@ -25,7 +25,7 @@
         error = data.error || 'Login failed';
         return;
       }
-      await goto('/', { invalidateAll: true });
+      await goto('/dashboard', { invalidateAll: true });
     } finally {
       loading = false;
     }
