@@ -4,7 +4,7 @@
     let {
         items = [] as Array<{ value: string; label?: string }>,
         value = $bindable<string | null>(null),
-        name,
+        name = undefined as string | undefined,
         placeholder = 'Select...',
         class: className
     } = $props();

@@ -56,16 +56,10 @@ export const POST: RequestHandler = async (event) => {
         }
     });
 
-    // Optionally mirror primary owner on lead for quick filtering
-    const updated = await prisma.lead.update({
-        where: { id: leadId },
-        data: { assignedUserId: BigInt(userId), updatedAt: new Date() }
-    });
 
     return json({
         ok: true,
         lead: {
-            ...updated,
             assigned: true,
             assigned_to: {
                 id: user.id,

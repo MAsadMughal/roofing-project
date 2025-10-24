@@ -1,89 +1,95 @@
 <script lang="ts">
-    import Badge from '$lib/components/ui/badge/badge.svelte';
-    import Button from '$lib/components/ui/button/button.svelte';
-    import Card from '$lib/components/ui/card/card.svelte';
-    import * as Dialog from '$lib/components/ui/dialog/index.js';
-    import Label from '$lib/components/ui/label/label.svelte';
-    import * as Select from '$lib/components/ui/select/index.js';
-    import Input from '$lib/components/ui/input/input.svelte';
-    import Checkbox from '$lib/components/ui/checkbox/checkbox.svelte';
-    import Info from '@lucide/svelte/icons/info';
-    import Loader2 from '@lucide/svelte/icons/loader-2';
-    import PhoneCall from '@lucide/svelte/icons/phone-call';
-    import User2 from '@lucide/svelte/icons/user-2';
+	import Badge from '$lib/components/ui/badge/badge.svelte';
+	import Button from '$lib/components/ui/button/button.svelte';
+	import Card from '$lib/components/ui/card/card.svelte';
+	import * as Dialog from '$lib/components/ui/dialog/index.js';
+	import Label from '$lib/components/ui/label/label.svelte';
+	import * as Select from '$lib/components/ui/select/index.js';
+	import Input from '$lib/components/ui/input/input.svelte';
+	import Checkbox from '$lib/components/ui/checkbox/checkbox.svelte';
+	import Info from '@lucide/svelte/icons/info';
+	import Loader2 from '@lucide/svelte/icons/loader-2';
+	import PhoneCall from '@lucide/svelte/icons/phone-call';
+	import User2 from '@lucide/svelte/icons/user-2';
 	import ChevronDown from '@lucide/svelte/icons/chevron-down';
+	import Clock from '@lucide/svelte/icons/clock';
+	import CalendarDays from '@lucide/svelte/icons/calendar-days';
 
-    type Lead = any;
-    let {
-        lead,
-        reps = [],
-        selectedRepId = $bindable<string | undefined>(),
-        onToggleWatchlist,
-        onOpenAssign,
-        assigning = false,
-        assignError = null,
-        onAssign,
-        watchlistSaving = false,
-        role = 'OWNER',
-    } = $props<{
-        lead: Lead;
-        reps?: Array<{ id: string; name: string; email: string }>;
-        selectedRepId?: string | undefined;
-        onToggleWatchlist: (lead: Lead) => void;
-        onOpenAssign: (leadId: bigint) => void;
-        assigning?: boolean;
-        assignError?: string | null;
-        onAssign: () => void;
-        watchlistSaving?: boolean;
-        role?: String;
-    }>();
-
+	type Lead = any;
+	let {
+		lead,
+		reps = [],
+		selectedRepId = $bindable<string | undefined>(),
+		onToggleWatchlist,
+		onOpenAssign,
+		assigning = false,
+		assignError = null,
+		onAssign,
+		watchlistSaving = false,
+		role = 'OWNER',
+		history
+	} = $props<{
+		lead: Lead;
+		reps?: Array<{ id: string; name: string; email: string }>;
+		selectedRepId?: string | undefined;
+		onToggleWatchlist: (lead: Lead) => void;
+		onOpenAssign: (leadId: bigint) => void;
+		assigning?: boolean;
+		assignError?: string | null;
+		onAssign: () => void;
+		watchlistSaving?: boolean;
+		role?: String;
+		history?: any;
+	}>();
+	console.log(lead);
 	// Status change UI for reps: derive the viewer's assignment if present on the lead
 	const assignment = $derived((lead as any).viewer_assignment ?? null);
-	let nextStatus: 'assigned' | 'in_contact' | 'inspection_scheduled' | 'closed' = $state('assigned');
+	let nextStatus: 'assigned' | 'in_contact' | 'inspection_scheduled' | 'closed' =
+		$state('assigned');
 	$effect(() => {
 		nextStatus = (assignment?.status ?? 'assigned') as typeof nextStatus;
 	});
 	let savingStatus = $state(false);
 	let statusError: string | null = $state(null);
-    let statusDialogOpen = $state(false);
+	let statusDialogOpen = $state(false);
+	let historyDialogOpen = $state(false);
 
-    // Inspection scheduling state
-    let inspectors: Array<{ id: string; name: string; email: string }> = $state([]);
-    let selectedInspectorIds: string[] = $state([]);
-    let inspectionDate: string = $state(''); // ISO string from input[type=datetime-local]
-    let showInspectionDetails = $state(false);
+	// Inspection scheduling state
+	let inspectors: Array<{ id: string; name: string; email: string }> = $state([]);
+	let selectedInspectorIds: string[] = $state([]);
+	let inspectionDate: string = $state(''); // ISO string from input[type=datetime-local]
+	let showInspectionDetails = $state(false);
 
-    async function ensureInspectorsLoaded() {
-        if (inspectors.length > 0) return;
-        const res = await fetch('/api/inspectors');
-        const users = await res.json().catch(() => []);
-        inspectors = (users || []).map((u: any) => ({
-            id: String(u.id),
-            name: (u.firstName || '') + ' ' + (u.lastName || ''),
-            email: u.email
-        }));
-    }
+	async function ensureInspectorsLoaded() {
+		if (inspectors.length > 0) return;
+		const res = await fetch('/api/inspectors');
+		const users = await res.json().catch(() => []);
+		inspectors = (users || []).map((u: any) => ({
+			id: String(u.id),
+			name: (u.firstName || '') + ' ' + (u.lastName || ''),
+			email: u.email
+		}));
+	}
 
-    async function saveStatus() {
+	async function saveStatus() {
 		if (!assignment) return;
 		savingStatus = true;
 		statusError = null;
 		try {
-            const payload: any = { status: nextStatus };
-            if (nextStatus === 'inspection_scheduled') {
-                if (!inspectionDate || selectedInspectorIds.length === 0) {
-                    statusError = 'Inspection date and at least one inspector are required';
-                    return;
-                }
-                payload.inspectionDate = inspectionDate;
-                payload.laborIds = selectedInspectorIds;
-            }
+			const payload: any = { status: nextStatus };
+			if (nextStatus === 'inspection_scheduled') {
+				if (!inspectionDate || selectedInspectorIds.length === 0) {
+					statusError = 'Inspection date and at least one inspector are required';
+					return;
+				}
+				payload.inspectionDate = inspectionDate;
+				payload.laborIds = selectedInspectorIds;
+			}
 
-            const res = await fetch(`/api/leads/${lead.id}/assignment`, {
+			const res = await fetch(`/api/leads/${lead.id}/assignment`, {
 				method: 'PATCH',
 				headers: { 'content-type': 'application/json' },
-                body: JSON.stringify(payload)
+				body: JSON.stringify(payload)
 			});
 			const out = await res.json().catch(() => ({}));
 			if (!res.ok) {
@@ -92,31 +98,52 @@
 			}
 			(lead as any).viewer_assignment = out.assignment;
 			(lead as any).status = out.assignment?.status || (lead as any).status;
-            statusDialogOpen = false;
-            showInspectionDetails = false;
-            // Reset inspection details after successful save
-            inspectionDate = '';
-            selectedInspectorIds = [];
+			statusDialogOpen = false;
+			showInspectionDetails = false;
+			// Reset inspection details after successful save
+			inspectionDate = '';
+			selectedInspectorIds = [];
 		} finally {
 			savingStatus = false;
 		}
 	}
 
-    $effect(() => {
-        if (nextStatus === 'inspection_scheduled' && !showInspectionDetails) {
-            showInspectionDetails = true;
-            ensureInspectorsLoaded();
-        } else if (nextStatus !== 'inspection_scheduled') {
-            showInspectionDetails = false;
-        }
-    });
+	$effect(() => {
+		if (nextStatus === 'inspection_scheduled' && !showInspectionDetails) {
+			showInspectionDetails = true;
+			ensureInspectorsLoaded();
+		} else if (nextStatus !== 'inspection_scheduled') {
+			showInspectionDetails = false;
+		}
+	});
+
+	function formatDate(dateStr: string) {
+		return new Date(dateStr).toLocaleDateString('en-US', {
+			year: 'numeric',
+			month: 'short',
+			day: 'numeric',
+			hour: '2-digit',
+			minute: '2-digit'
+		});
+	}
+
+	function getStatusColor(status: string) {
+		const colors = {
+			assigned: 'bg-blue-100 text-blue-800',
+			in_contact: 'bg-yellow-100 text-yellow-800',
+			inspection_scheduled: 'bg-purple-100 text-purple-800',
+			closed: 'bg-green-100 text-green-800'
+		};
+		return colors[status] || 'bg-gray-100 text-gray-800';
+	}
+	console.log(history);
 </script>
 
 <Card>
 	<div class="flex items-center justify-between gap-4 px-4 py-3">
 		<div class="flex items-center gap-3">
 			<div
-				class="flex size-10 items-center justify-center rounded-full border bg-secondary/50 text-muted-foreground"
+				class="text-muted-foreground flex size-10 items-center justify-center rounded-full border bg-secondary/50"
 			>
 				<User2 class="size-6" />
 			</div>
@@ -124,17 +151,15 @@
 				<div class="text-sm font-semibold tracking-wide">
 					{(lead.first_name ?? '') + ' ' + (lead.last_name ?? '')}
 				</div>
-				<div class="text-xs text-muted-foreground">{lead.email}</div>
+				<div class="text-muted-foreground text-xs">{lead.email}</div>
 			</div>
 		</div>
 		<div class="flex items-center gap-2">
-			<Badge class="border bg-muted px-2 py-1 text-[10px]"
-				>HIGH</Badge
-			>
+			<Badge class="bg-muted border px-2 py-1 text-[10px]">HIGH</Badge>
 		</div>
 	</div>
 
-	<div class="px-4 pb-3 text-sm leading-relaxed text-muted-foreground">
+	<div class="text-muted-foreground px-4 pb-3 text-sm leading-relaxed">
 		{lead.description}
 	</div>
 
@@ -142,15 +167,13 @@
 		class="flex flex-col gap-3 border-t px-4 py-3 md:flex-row md:items-center md:justify-between"
 	>
 		<div class="flex items-center gap-2 text-sm">
-			<PhoneCall class="size-4 text-muted-foreground" />
+			<PhoneCall class="text-muted-foreground size-4" />
 			<a href={`tel:${lead.phone}`} class="font-semibold">{lead.phone}</a>
 		</div>
 
-		<div class="flex items-center gap-2 text-sm text-muted-foreground">
+		<div class="text-muted-foreground flex items-center gap-2 text-sm">
 			<Info class="size-4" />
-			<span
-				>Source: {lead.source ?? '-'} • {String(lead.created_at ?? '').slice(0, 10)}</span
-			>
+			<span>Source: {lead.source ?? '-'} • {String(lead.created_at ?? '').slice(0, 10)}</span>
 		</div>
 
 		<div class="flex items-center gap-3">
@@ -166,79 +189,196 @@
 					{/if}
 					{lead.watchlisted ? 'Remove from Watchlist' : 'Add to Watchlist'}
 				</Button>
-			
-                {#if !lead.assigned}
-                <Dialog.Root>
-                    <Dialog.Trigger>
-                        <Button variant="outline" class="h-8" onclick={() => onOpenAssign(lead.id)}
-                            >Assign</Button
-                        >
-                    </Dialog.Trigger>
-					<Dialog.Content>
-						<Dialog.Header>
-							<Dialog.Title>Assign Lead</Dialog.Title>
-							<Dialog.Description>
-								Select a sales representative to assign this lead to.
-							</Dialog.Description>
-						</Dialog.Header>
 
-						<div class="mb-4 rounded-lg border p-4">
-							<div class="mb-2">
-								<span class="font-semibold">{(lead.first_name ?? '') + ' ' + (lead.last_name ?? '')}</span>
-								<span class="ml-2 text-sm text-muted-foreground">{lead.email}</span>
-							</div>
-							<div class="text-sm text-muted-foreground">
-								<div>Phone: {lead.phone}</div>
-								<div>Source: {lead.source ?? '-'}</div>
-								<div>Created: {String(lead.created_at ?? '').slice(0, 10)}</div>
-								<div>Status: {(lead.status ?? '').toUpperCase()}</div>
-							</div>
-						</div>
+				{#if !lead.assigned}
+					<Dialog.Root>
+						<Dialog.Trigger>
+							<Button variant="outline" class="h-8" onclick={() => onOpenAssign(lead.id)}
+								>Assign</Button
+							>
+						</Dialog.Trigger>
+						<Dialog.Content>
+							<Dialog.Header>
+								<Dialog.Title>Assign Lead</Dialog.Title>
+								<Dialog.Description>
+									Select a sales representative to assign this lead to.
+								</Dialog.Description>
+							</Dialog.Header>
 
-						<Label class="text-sm font-medium">Sales Representative</Label>
-						<Select.Root type="single" name="salesRep"  bind:value={selectedRepId}>
-							<Select.Trigger class="w-full">
-						{#if selectedRepId}
-									{reps.find((r: any) => r.id === selectedRepId)?.name ?? 'Select Sales Representative'}
-								{:else}
-									Select Sales Representative
-								{/if}
-							</Select.Trigger>
-							<Select.Content>
-								<Select.Group>
-									<Select.Label>Sales Reps</Select.Label>
-									{#each reps as rep (rep.id)}
-										<Select.Item value={rep.id} label={rep.name}>
-											{rep.name}
-										</Select.Item>
+							<div class="mb-4 rounded-lg border p-4">
+								<div class="mb-2">
+									<span class="font-semibold"
+										>{(lead.first_name ?? '') + ' ' + (lead.last_name ?? '')}</span
+									>
+									<span class="text-muted-foreground ml-2 text-sm">{lead.email}</span>
+								</div>
+								<div class="text-muted-foreground text-sm">
+									<div>Phone: {lead.phone}</div>
+									<div>Source: {lead.source ?? '-'}</div>
+									<div>Created: {String(lead.created_at ?? '').slice(0, 10)}</div>
+									<div>Status: {(lead.status ?? '').toUpperCase()}</div>
+								</div>
+							</div>
+
+							<Label class="text-sm font-medium">Sales Representative</Label>
+							<Select.Root type="single" name="salesRep" bind:value={selectedRepId}>
+								<Select.Trigger class="w-full">
+									{#if selectedRepId}
+										{reps.find((r: any) => r.id === selectedRepId)?.name ??
+											'Select Sales Representative'}
+									{:else}
+										Select Sales Representative
+									{/if}
+								</Select.Trigger>
+								<Select.Content>
+									<Select.Group>
+										<Select.Label>Sales Reps</Select.Label>
+										{#each reps as rep (rep.id)}
+											<Select.Item value={rep.id} label={rep.name}>
+												{rep.name}
+											</Select.Item>
+										{/each}
+									</Select.Group>
+								</Select.Content>
+							</Select.Root>
+							{#if assignError}
+								<p class="mt-2 text-sm text-red-600">{assignError}</p>
+							{/if}
+							<Dialog.Footer>
+								<Dialog.Close>
+									<Button variant="outline" class="h-8">Cancel</Button>
+								</Dialog.Close>
+								<Button class="h-8" disabled={assigning || !selectedRepId} onclick={onAssign}>
+									{assigning ? 'Assigning...' : 'Assign'}
+								</Button>
+							</Dialog.Footer>
+						</Dialog.Content>
+					</Dialog.Root>
+				{:else}
+					<Button variant="ghost" class="h-8 px-2" onclick={() => (historyDialogOpen = true)}>
+						<Badge class="bg-muted hover:bg-muted/80 cursor-pointer border px-2 py-1 text-[10px]">
+							ASSIGNED{#if lead.assigned_to}
+								• {(lead.assigned_to.first_name ?? '') +
+									' ' +
+									(lead.assigned_to.last_name ?? '')}{/if}
+						</Badge>
+					</Button>
+
+					<!-- Lead History Dialog -->
+					<Dialog.Root bind:open={historyDialogOpen}>
+						<Dialog.Content class="max-w-2xl">
+							<Dialog.Header>
+								<Dialog.Title>Lead Timeline</Dialog.Title>
+								<Dialog.Description>
+									Timeline of events and status changes for this lead
+								</Dialog.Description>
+							</Dialog.Header>
+
+							<div class="max-h-[60vh] overflow-y-auto">
+								<div class="space-y-4">
+									{#each history ? [...history].reverse() : [] as event}
+										<div class="flex gap-4 rounded-lg border p-4 transition-colors hover:bg-muted/30">
+											<div class="flex-shrink-0">
+												{#if event.type === 'salesRepAssigned'}
+													<User2 class="size-5 text-blue-500" />
+												{:else if event.type === 'inspectionScheduled'}
+													<CalendarDays class="size-5 text-purple-500" />
+												{:else if event.type === 'inContact'}
+													<PhoneCall class="size-5 text-green-500" />
+												{:else if event.type === 'closed'}
+													<Info class="size-5 text-red-500" />
+												{:else}
+													<Clock class="size-5 text-gray-500" />
+												{/if}
+											</div>
+											<div class="flex-grow">
+												<div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
+													<div class="flex flex-wrap items-center gap-2">
+														<Badge
+															class={`whitespace-nowrap ${
+																event.type === 'salesRepAssigned'
+																	? 'bg-blue-100 text-blue-800'
+																	: event.type === 'inContact'
+																		? 'bg-green-100 text-green-800'
+																		: event.type === 'inspectionScheduled'
+																			? 'bg-purple-100 text-purple-800'
+																			: 'bg-red-100 text-red-800'
+															} px-2 py-0.5 text-xs font-medium`}
+														>
+															{event.type.replace(/([A-Z])/g, ' $1').toUpperCase()}
+														</Badge>
+														<span class="font-medium break-words">
+															{#if event.type === 'salesRepAssigned'}
+																Lead assigned to {event.assignee?.name}
+															{:else if event.type === 'inContact'}
+																Initial contact made with lead
+															{:else if event.type === 'inspectionScheduled'}
+																Property inspection scheduled
+															{:else if event.type === 'closed'}
+																Lead closed
+															{/if}
+														</span>
+													</div>
+													<div class="flex flex-col items-start gap-3 sm:items-end">
+														<time class="text-xs text-nowrap font-medium text-foreground">
+															{formatDate(event.at)}
+														</time>
+														<div class="text-foreground text-nowrap text-xs">
+															Updated by <a href="/user/profile/{event.assignor?.id}" class="underline hover:text-foreground">{event.assignor?.name}</a>
+														</div>
+													</div>
+												</div>
+
+												{#if event.type === 'inspectionScheduled' && event.date}
+													<div class="mt-3 rounded-md bg-muted p-3 text-sm">
+														<div class="mb-2 font-semibold">Inspection Details</div>
+														<div class="flex items-center gap-2">
+															<CalendarDays class="size-4" />
+															<span>Scheduled for {formatDate(event.date)}</span>
+														</div>
+														{#if event.inspectors?.length}
+															<div class="mt-2">
+																<div class="mb-1 font-medium">Assigned Inspectors:</div>
+																<ul class="list-inside list-disc">
+																	{#each event.inspectors as inspector}
+																		<li>{inspector.name}</li>
+																	{/each}
+																</ul>
+															</div>
+														{/if}
+													</div>
+												{/if}
+											</div>
+										</div>
 									{/each}
-								</Select.Group>
-							</Select.Content>
-						</Select.Root>
-						{#if assignError}
-							<p class="mt-2 text-sm text-red-600">{assignError}</p>
-						{/if}
-						<Dialog.Footer>
-							<Dialog.Close>
-								<Button variant="outline" class="h-8">Cancel</Button>
-							</Dialog.Close>
-							<Button class="h-8" disabled={assigning || !selectedRepId} onclick={onAssign}>
-								{assigning ? 'Assigning...' : 'Assign'}
-							</Button>
-						</Dialog.Footer>
-					</Dialog.Content>
-                </Dialog.Root>
-                {:else}
-                    <Badge class="border bg-muted px-2 py-1 text-[10px]">ASSIGNED{#if lead.assigned_to} • {(lead.assigned_to.first_name ?? '') + ' ' + (lead.assigned_to.last_name ?? '')}{/if}</Badge>
-                {/if}
+
+									{#if !history?.length}
+										<div class="text-muted-foreground py-8 text-center">
+											No history available for this lead
+										</div>
+									{/if}
+								</div>
+							</div>
+
+							<Dialog.Footer>
+								<Dialog.Close>
+									<Button variant="outline">Close</Button>
+								</Dialog.Close>
+							</Dialog.Footer>
+						</Dialog.Content>
+					</Dialog.Root>
+				{/if}
 			{/if}
 
 			{#if assignment}
-	<Button variant="outline" class="h-8 flex items-center gap-2" onclick={() => statusDialogOpen = true}>
-		{(assignment?.status || '').replace('_', ' ').toUpperCase()}
-		<ChevronDown class="size-4" />
-	</Button>
-	
+				<Button
+					variant="outline"
+					class="flex h-8 items-center gap-2"
+					onclick={() => (statusDialogOpen = true)}
+				>
+					{(assignment?.status || '').replace('_', ' ').toUpperCase()}
+					<ChevronDown class="size-4" />
+				</Button>
 			{/if}
 			<Button variant="outline" class="h-8">Details</Button>
 		</div>
@@ -251,9 +391,7 @@
 		<Dialog.Content>
 			<Dialog.Header>
 				<Dialog.Title>Change Lead Status</Dialog.Title>
-				<Dialog.Description>
-					Update the status of this lead
-				</Dialog.Description>
+				<Dialog.Description>Update the status of this lead</Dialog.Description>
 			</Dialog.Header>
 
 			<div class="space-y-4">
@@ -268,42 +406,47 @@
 								<Select.Label>Status</Select.Label>
 								<Select.Item value={'assigned'} label={'Assigned'}>Assigned</Select.Item>
 								<Select.Item value={'in_contact'} label={'In Contact'}>In Contact</Select.Item>
-								<Select.Item value={'inspection_scheduled'} label={'Inspection Scheduled'}>Inspection Scheduled</Select.Item>
+								<Select.Item value={'inspection_scheduled'} label={'Inspection Scheduled'}
+									>Inspection Scheduled</Select.Item
+								>
 								<Select.Item value={'closed'} label={'Closed'}>Closed</Select.Item>
 							</Select.Group>
 						</Select.Content>
 					</Select.Root>
 				</div>
 
-                {#if showInspectionDetails}
-                    <div class="space-y-4 border-t pt-4">
-                        <div class="grid gap-2">
-                            <Label for="inspectionDate">Inspection Date</Label>
-                            <Input id="inspectionDate" type="datetime-local" bind:value={inspectionDate} />
-                        </div>
-                        <div>
-                            <div class="mb-2 text-sm font-medium">Inspectors</div>
-                            <div class="max-h-56 space-y-2 overflow-auto rounded border p-2">
-                                {#if inspectors.length === 0}
-                                    <div class="text-xs text-muted-foreground">No inspectors available.</div>
-                                {:else}
-                                    {#each inspectors as ins (ins.id)}
-                                        <Label class="flex items-center gap-2 text-sm">
-                                            <Checkbox checked={selectedInspectorIds.includes(ins.id)} onchange={(e: any) => {
-                                                const checked = e.detail;
-                                                selectedInspectorIds = checked
-                                                    ? Array.from(new Set([...selectedInspectorIds, ins.id]))
-                                                    : selectedInspectorIds.filter((id) => id !== ins.id);
-                                            }} />
-                                            <span>{ins.name}</span>
-                                            <span class="ml-2 text-xs text-muted-foreground">{ins.email}</span>
-                                        </Label>
-                                    {/each}
-                                {/if}
-                            </div>
-                        </div>
-                    </div>
-                {/if}
+				{#if showInspectionDetails}
+					<div class="space-y-4 border-t pt-4">
+						<div class="grid gap-2">
+							<Label for="inspectionDate">Inspection Date</Label>
+							<Input id="inspectionDate" type="datetime-local" bind:value={inspectionDate} />
+						</div>
+						<div>
+							<div class="mb-2 text-sm font-medium">Inspectors</div>
+							<div class="max-h-56 space-y-2 overflow-auto rounded border p-2">
+								{#if inspectors.length === 0}
+									<div class="text-muted-foreground text-xs">No inspectors available.</div>
+								{:else}
+									{#each inspectors as ins (ins.id)}
+										<Label class="flex items-center gap-2 text-sm">
+											<Checkbox
+												checked={selectedInspectorIds.includes(ins.id)}
+												onchange={(e: any) => {
+													const checked = e.detail;
+													selectedInspectorIds = checked
+														? Array.from(new Set([...selectedInspectorIds, ins.id]))
+														: selectedInspectorIds.filter((id) => id !== ins.id);
+												}}
+											/>
+											<span>{ins.name}</span>
+											<span class="text-muted-foreground ml-2 text-xs">{ins.email}</span>
+										</Label>
+									{/each}
+								{/if}
+							</div>
+						</div>
+					</div>
+				{/if}
 
 				{#if statusError}
 					<p class="text-sm text-red-600">{statusError}</p>

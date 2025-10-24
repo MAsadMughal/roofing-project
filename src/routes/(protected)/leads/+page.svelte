@@ -14,7 +14,13 @@
 	import SearchIcon from '@lucide/svelte/icons/search';
 	import FilterIcon from '@lucide/svelte/icons/filter';
 
-const { data } = $props<{ leads: any[]; q: string; status: string; source: string; unassigned?: string }>();
+	const { data } = $props<{
+		leads: any[];
+		q: string;
+		status: string;
+		source: string;
+		unassigned?: string;
+	}>();
 
 	type Status = 'new' | 'contacted' | 'qualified' | 'lost' | 'converted';
 	type WorkType = 'Repair' | 'Replace' | 'Installation' | 'Re-Roof';
@@ -35,8 +41,8 @@ const { data } = $props<{ leads: any[]; q: string; status: string; source: strin
 	let sortBy: 'Newest' | 'Oldest' | 'Name' | 'Source' = $state('Newest');
 	const sortOptions = ['Newest', 'Oldest', 'Name', 'Source'] as const;
 
-// Unassigned-only server filter
-let unassignedOnly = $state(Boolean(data.unassigned));
+	// Unassigned-only server filter
+	let unassignedOnly = $state(Boolean(data.unassigned));
 
 	// Combined filters state
 	let filters: any = $state({
@@ -74,20 +80,22 @@ let unassignedOnly = $state(Boolean(data.unassigned));
 	function applyFilters() {
 		updateUrl();
 	}
-
-	function updateUrl() {
+	async function updateUrl() {
 		const params = new URLSearchParams($page.url.searchParams);
 		if (searchText) params.set('q', searchText);
 		else params.delete('q');
 		if (filters.category !== 'All') params.set('status', filters.category);
 		else params.delete('status');
-    if (unassignedOnly) params.set('unassigned', 'true');
-    else params.delete('unassigned');
+		if (unassignedOnly) params.set('unassigned', 'true');
+		else params.delete('unassigned');
 		const nextSearch = params.toString() ? `?${params.toString()}` : '';
 		const currentSearch = $page.url.search;
 		const path = $page.url.pathname;
 		if (browser && nextSearch !== currentSearch) {
 			goto(`${path}${nextSearch}`, { replaceState: true, keepFocus: true, noScroll: true });
+			const res = await fetch(`/api/leads${nextSearch}`);
+			const newLeads = await res.json();
+			leads = newLeads;
 		}
 	}
 
@@ -220,7 +228,7 @@ let unassignedOnly = $state(Boolean(data.unassigned));
 				<Button variant="outline" class="relative h-10">
 					<FilterIcon class="mr-2 size-4" />
 					Filters
-					{#if Object.values(filters).some((category: any) => Object.values(category).some(Boolean))}
+					{#if Object.values(filters).some( (category: any) => Object.values(category).some(Boolean) )}
 						<div
 							class="absolute -top-1.5 -right-1.5 size-3 rounded-full border-2 bg-blue-700"
 						></div>
@@ -240,11 +248,13 @@ let unassignedOnly = $state(Boolean(data.unassigned));
 							<Accordion.Trigger class="flex w-full items-center justify-between p-4">
 								<div class="relative">
 									<span class="font-semibold">Status</span>
-									<div
-										class="absolute -top-1 -right-4 flex size-4 items-center justify-center rounded-full bg-red-500 text-[10px] font-medium text-primary-foreground"
-									>
-										{Object.entries(filters.status).filter(([, v]) => v).length}
-									</div>
+									{#if Object.entries(filters.status).filter(([, v]) => v).length > 0}
+										<div
+											class="absolute -top-1 -right-4 flex size-4 items-center justify-center rounded-full bg-blue-600 text-[10px] font-medium text-white"
+										>
+											{Object.entries(filters.status).filter(([, v]) => v).length}
+										</div>
+									{/if}
 								</div>
 							</Accordion.Trigger>
 							<Accordion.Content class="border-t px-4 pb-4">
@@ -269,11 +279,13 @@ let unassignedOnly = $state(Boolean(data.unassigned));
 							<Accordion.Trigger class="flex w-full items-center justify-between p-4">
 								<div class="relative">
 									<span class="font-semibold">Work Type</span>
-									<div
-										class="absolute -top-1 -right-4 flex size-4 items-center justify-center rounded-full bg-red-500 text-[10px] font-medium text-primary-foreground"
-									>
-										{Object.entries(filters.workType).filter(([, v]) => v).length}
-									</div>
+									{#if Object.entries(filters.workType).filter(([, v]) => v).length > 0}
+										<div
+											class="absolute -top-1 -right-4 flex size-4 items-center justify-center rounded-full bg-blue-600 text-[10px] font-medium text-white"
+										>
+											{Object.entries(filters.workType).filter(([, v]) => v).length}
+										</div>
+									{/if}
 								</div>
 							</Accordion.Trigger>
 							<Accordion.Content class="border-t px-4 pb-4">
@@ -294,15 +306,17 @@ let unassignedOnly = $state(Boolean(data.unassigned));
 						</Accordion.Item>
 
 						<!-- Source -->
-						<Accordion.Item value="source" class="rounded-lg border-1 ">
+						<Accordion.Item value="source" class="rounded-lg border-1">
 							<Accordion.Trigger class="flex w-full items-center justify-between p-4">
 								<div class="relative">
 									<span class="font-semibold">Source</span>
-									<div
-										class="absolute -top-1 -right-4 flex size-4 items-center justify-center rounded-full bg-red-500 text-[10px] font-medium text-primary-foreground"
-									>
-										{Object.entries(filters.source).filter(([, v]) => v).length}
-									</div>
+									{#if Object.entries(filters.source).filter(([, v]) => v).length > 0}
+										<div
+											class="absolute -top-1 -right-4 flex size-4 items-center justify-center rounded-full bg-blue-600 text-[10px] font-medium text-white"
+										>
+											{Object.entries(filters.source).filter(([, v]) => v).length}
+										</div>
+									{/if}
 								</div>
 							</Accordion.Trigger>
 							<Accordion.Content class="border-t px-4 pb-4">
@@ -356,6 +370,7 @@ let unassignedOnly = $state(Boolean(data.unassigned));
 		{#each filtered as lead}
 			<LeadCard
 				{lead}
+				history={lead.history}
 				{reps}
 				role={$page?.data?.user?.role!}
 				bind:selectedRepId

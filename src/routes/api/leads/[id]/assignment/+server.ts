@@ -89,13 +89,7 @@ export const PATCH: RequestHandler = async (event) => {
         }
     });
 
-    // Optional: sync lead.assigned_user_id if status is assigned/in_contact (owner choice)
-    if (status && (status === 'assigned' || status === 'in_contact')) {
-        try {
-            await prisma.lead.update({ where: { id: leadId }, data: { assignedUserId: updated.assignedToId, updatedAt: new Date() } });
-        } catch {}
-    }
-
+   
     return json({ ok: true, assignment: updated });
 };
 

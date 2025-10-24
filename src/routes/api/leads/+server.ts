@@ -41,7 +41,7 @@ export const GET: RequestHandler = async (event) => {
             // For reps: include their latest assignment
             // For owners: include latest assignment created by them (to compute assigned flag)
             assignments: isRep
-                ? { where: { assignedToId: userId }, orderBy: { assignedAt: 'desc' }, take: 1 }
+                ? { where: { assignedToId: userId }, orderBy: { assignedAt: 'desc' }, take: 1, select: { id: true, status: true, assignedAt: true, history: true } }
                 : {
                     where: {
                         OR: [
@@ -79,7 +79,8 @@ export const GET: RequestHandler = async (event) => {
             viewer_assignment: isRep ? viewerAssignment : null,
             assigned: assigned,
             assigned_to: assignedToMeta,
-            watchlisted: ((user as any)?.watchlistLeadIds ?? []).includes(l.id)
+            watchlisted: ((user as any)?.watchlistLeadIds ?? []).includes(l.id),
+            history: assigned ? viewerAssignment?.history : null
         };
     }));
 };
@@ -100,5 +101,3 @@ export const POST: RequestHandler = async (event) => {
 	});
 	return json(lead, { status: 201 });
 };
-
-

@@ -25,7 +25,6 @@ model User {
   customer       Customer?  @relation(fields: [customerId], references: [id], onDelete: SetNull)
   passwordResets PasswordReset[]
   invitesSent    Invite[]   @relation("owner_invites")
-  assignedLeads  Lead[]     @relation("LeadAssignedTo")
   assignments    Assignment[] @relation("AssignedCrew")
   ownerAssignments Assignment[] @relation("OwnerAssignments")
   inspections    LeadInspection[] @relation("PerformedInspections")
@@ -77,48 +76,54 @@ model Lead {
   description    String?
   status         String      @default("new") // new, contacted, qualified, inspection_scheduled, estimate_sent, proposal_sent, job_created, closed
   source         String?     // Website, Referral, Google Ads, etc.
-  assignedUserId BigInt?     @map("assigned_user_id")
   priority       String?     // low, medium, high
   createdAt      DateTime    @default(now()) @map("created_at") @db.Timestamptz(6)
   updatedAt      DateTime    @default(now()) @map("updated_at") @db.Timestamptz(6)
 
   customer       Customer?   @relation(fields: [customerId], references: [id], onDelete: SetNull)
-  assignedTo     User?       @relation("LeadAssignedTo", fields: [assignedUserId], references: [id], onDelete: SetNull)
   jobs           Job[]
   inspections    LeadInspection[]
   assignments    Assignment[]
   estimates      Estimate[]
 
   @@index([customerId])
-  @@index([assignedUserId])
   @@map("leads")
 }
 
 model Assignment {
-  id           BigInt     @id @default(autoincrement()) @db.BigInt
-  leadId       BigInt     @map("lead_id")
-  assignedToId BigInt     @map("assigned_to_id")
-  ownerId      BigInt     @map("owner_id")
-  role         String?    // "Sales Rep", "Inspector", "Crew Lead"
-  status       String     @default("assigned") // assigned, in_contact, inspection_scheduled, closed
+  id           BigInt    @id @default(autoincrement()) @db.BigInt
+  leadId       BigInt    @map("lead_id")
+  assignedToId BigInt    @map("assigned_to_id") // sales rep or user handling lead
+  ownerId      BigInt    @map("owner_id")       // contractor or admin assigning
+  role         String?   // "Sales Rep", "Inspector", etc.
+  status       String    @default("assigned") // assigned, in_contact, inspection_scheduled, estimate_sent, proposal_sent, job_created, closed
   lastStatusChangedAt DateTime? @map("last_status_changed_at") @db.Timestamptz(6)
-  inspectionDate DateTime? @map("inspection_date") @db.Timestamptz(6)
-  laborIds     BigInt[]   @map("labor_ids") @db.BigInt
-  assignedAt   DateTime   @default(now()) @map("assigned_at") @db.Timestamptz(6)
-  notes        String?
-  history      Json       @default("[]")
-  createdAt    DateTime   @default(now()) @map("created_at") @db.Timestamptz(6)
-  updatedAt    DateTime   @updatedAt @map("updated_at") @db.Timestamptz(6)
 
-  lead         Lead       @relation(fields: [leadId], references: [id], onDelete: Cascade)
-  assignedTo   User       @relation("AssignedCrew", fields: [assignedToId], references: [id], onDelete: Cascade)
-  owner        User       @relation("OwnerAssignments", fields: [ownerId], references: [id], onDelete: Cascade)
+  // Minimal "current" data for quick reference
+  inspectionDate DateTime? @map("inspection_date") @db.Timestamptz(6)
+  latestEstimateId BigInt? @map("latest_estimate_id")
+  latestProposalId BigInt? @map("latest_proposal_id")
+  latestJobId      BigInt? @map("latest_job_id")
+
+  // Compact history of all events (status changes, inspection, estimate, proposal, etc.)
+  history Json @default("[]")
+
+  assignedAt DateTime @default(now()) @map("assigned_at") @db.Timestamptz(6)
+  notes      String?
+  createdAt  DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt  DateTime @updatedAt @map("updated_at") @db.Timestamptz(6)
+
+  // Relations
+  lead       Lead  @relation(fields: [leadId], references: [id], onDelete: Cascade)
+  assignedTo User  @relation("AssignedCrew", fields: [assignedToId], references: [id], onDelete: Cascade)
+  owner      User  @relation("OwnerAssignments", fields: [ownerId], references: [id], onDelete: Cascade)
 
   @@index([leadId])
   @@index([assignedToId])
   @@index([ownerId])
   @@map("assignments")
 }
+
 
 model LeadInspection {
   id            BigInt     @id @default(autoincrement()) @db.BigInt
