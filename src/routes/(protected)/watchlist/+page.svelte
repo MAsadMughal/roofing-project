@@ -1,5 +1,5 @@
 <script lang="ts">
-	import LeadCard from '$lib/components/leads/LeadCard.svelte';
+  import OwnerLeadCard from '$lib/components/leads/OwnerLeadCard.svelte';
 	import Card from '$lib/components/ui/card/card.svelte';
 	const { data } = $props<{ leads: any[] }>();
 
@@ -88,7 +88,7 @@
 			<Card class="p-4 text-sm text-muted-foreground">Your watchlist is empty.</Card>
 		{:else}
 			{#each leads as lead}
-				<LeadCard
+            <OwnerLeadCard
 					{lead}
 					{reps}
 					bind:selectedRepId

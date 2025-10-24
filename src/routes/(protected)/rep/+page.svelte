@@ -6,7 +6,7 @@
   import Input from '$lib/components/ui/input/input.svelte';
   import * as Select from '$lib/components/ui/select/index.js';
   import SearchIcon from '@lucide/svelte/icons/search';
-  import LeadCard from '$lib/components/leads/LeadCard.svelte';
+  import RepLeadCard from '$lib/components/leads/RepLeadCard.svelte';
 
   const { data } = $props<{ leads: any[]; q: string; status: string }>();
 
@@ -96,17 +96,8 @@
   <!-- Lead List -->
   <section class="space-y-4">
     {#each filtered as lead}
-      <LeadCard
+      <RepLeadCard
         {lead}
-        reps={[]}
-        selectedRepId={undefined}
-        assigning={false}
-        assignError={null}
-        watchlistSaving={Boolean((lead as any)._savingWatchlist)}
-        onToggleWatchlist={noop}
-        onOpenAssign={noop}
-        onAssign={noop}
-        role={'REP'}
       />
     {/each}
   </section>

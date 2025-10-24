@@ -2,7 +2,7 @@
 	import { browser } from '$app/environment';
 	import { goto } from '$app/navigation';
 	import { page } from '$app/stores';
-	import LeadCard from '$lib/components/leads/LeadCard.svelte';
+ import OwnerLeadCard from '$lib/components/leads/OwnerLeadCard.svelte';
 	import * as Accordion from '$lib/components/ui/accordion';
 	import Button from '$lib/components/ui/button/button.svelte';
 	import Card from '$lib/components/ui/card/card.svelte';
@@ -368,11 +368,10 @@
 	<!-- Lead List -->
 	<section class="max-h-[calc(100vh-258px)] space-y-4 overflow-y-scroll">
 		{#each filtered as lead}
-			<LeadCard
+            <OwnerLeadCard
 				{lead}
 				history={lead.history}
 				{reps}
-				role={$page?.data?.user?.role!}
 				bind:selectedRepId
 				{assigning}
 				{assignError}

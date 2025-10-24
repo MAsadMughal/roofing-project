@@ -1,5 +1,5 @@
 <script lang="ts">
-  import LeadCard from '$lib/components/leads/LeadCard.svelte';
+  import OwnerLeadCard from '$lib/components/leads/OwnerLeadCard.svelte';
   const { data } = $props<{ leads: any[] }>();
 
   type Lead = any;
@@ -61,7 +61,7 @@
       <div class="text-sm text-muted-foreground">No leads assigned by you yet.</div>
     {:else}
       {#each leads as lead}
-        <LeadCard
+        <OwnerLeadCard
           {lead}
           {reps}
           bind:selectedRepId
@@ -71,7 +71,6 @@
           onToggleWatchlist={toggleWatchlist}
           onOpenAssign={openAssign}
           onAssign={assignLead}
-          role={'OWNER'}
         />
       {/each}
     {/if}
