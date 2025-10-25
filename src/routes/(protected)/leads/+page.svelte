@@ -2,17 +2,16 @@
 	import { browser } from '$app/environment';
 	import { goto } from '$app/navigation';
 	import { page } from '$app/stores';
- import OwnerLeadCard from '$lib/components/leads/OwnerLeadCard.svelte';
+	import OwnerLeadCard from '$lib/components/leads/OwnerLeadCard.svelte';
 	import * as Accordion from '$lib/components/ui/accordion';
 	import Button from '$lib/components/ui/button/button.svelte';
-	import Card from '$lib/components/ui/card/card.svelte';
 	import { Checkbox } from '$lib/components/ui/checkbox/index.js';
+	import * as Dialog from '$lib/components/ui/dialog';
 	import Input from '$lib/components/ui/input/input.svelte';
 	import Label from '$lib/components/ui/label/label.svelte';
 	import * as Select from '$lib/components/ui/select/index.js';
-	import * as Dialog from '$lib/components/ui/dialog';
-	import SearchIcon from '@lucide/svelte/icons/search';
 	import FilterIcon from '@lucide/svelte/icons/filter';
+	import SearchIcon from '@lucide/svelte/icons/search';
 
 	const { data } = $props<{
 		leads: any[];
@@ -93,9 +92,7 @@
 		const path = $page.url.pathname;
 		if (browser && nextSearch !== currentSearch) {
 			goto(`${path}${nextSearch}`, { replaceState: true, keepFocus: true, noScroll: true });
-			const res = await fetch(`/api/leads${nextSearch}`);
-			const newLeads = await res.json();
-			leads = newLeads;
+			leads = data.leads;
 		}
 	}
 
@@ -206,10 +203,7 @@
 			</div>
 			<Button type="submit" variant="outline" class="!h-9.5">Search</Button>
 		</form>
-		<Label class="flex items-center gap-2 text-sm">
-			<Checkbox bind:checked={unassignedOnly} onchange={applyFilters} />
-			Unassigned only
-		</Label>
+
 		<Select.Root type="single" name="sort" bind:value={sortBy}>
 			<Select.Trigger class="min-w-40">
 				{sortBy}
@@ -242,6 +236,10 @@
 				</Dialog.Header>
 
 				<div class="max-h-[70vh] overflow-y-auto rounded-b-lg border-b">
+					<Label class="flex items-center gap-2 text-sm">
+						<Checkbox bind:checked={unassignedOnly} onchange={applyFilters} />
+						Unassigned only
+					</Label>
 					<Accordion.Root type="multiple" class="space-y-2">
 						<!-- Status -->
 						<Accordion.Item value="status" class="rounded-lg border">
@@ -359,16 +357,13 @@
 			</Dialog.Content>
 		</Dialog.Root>
 
-		<Button variant="outline" class="ml-auto h-10" onclick={() => goto('/leads/assigned')}
-			>See Assigned Leads</Button
-		>
 		<Button variant="outline" class="h-10" onclick={() => goto('/watchlist')}>See Watchlist</Button>
 	</div>
 
 	<!-- Lead List -->
 	<section class="max-h-[calc(100vh-258px)] space-y-4 overflow-y-scroll">
 		{#each filtered as lead}
-            <OwnerLeadCard
+			<OwnerLeadCard
 				{lead}
 				history={lead.history}
 				{reps}

@@ -81,7 +81,7 @@
 		return name || u.email;
 	};
 
-	const filteredUsers = $derived(
+	const filteredUsers:any = $derived(
 		data.users?.filter(
 			(u) =>
 				fullName(u).toLowerCase().includes(searchQuery.toLowerCase()) ||
@@ -217,7 +217,7 @@
 										</div>
 									</div>
 									<div class="flex items-center gap-4">
-										<Badge variant="outline" class={roleColors[user.role]}>
+										<Badge class={roleColors[user.role]}>
 											{getRoleLabel(user.role)}
 										</Badge>
 										<Button
@@ -249,14 +249,14 @@
 									<div>
 										<div class="font-medium">{invite.email}</div>
 										<div class="text-muted-foreground mt-1 flex items-center gap-2 text-sm">
-											<Badge variant="outline" class={roleColors[invite.role]}>
+											<Badge  class={roleColors[invite.role]}>
 												{getRoleLabel(invite.role)}
 											</Badge>
 											<span>•</span>
 											<span>Expires {new Date(invite.expiresAt).toLocaleDateString()}</span>
 										</div>
 									</div>
-									<Badge variant={invite.acceptedAt ? 'success' : 'secondary'}>
+									<Badge>
 										{invite.acceptedAt ? 'Accepted' : 'Pending'}
 									</Badge>
 								</div>

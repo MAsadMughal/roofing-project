@@ -205,7 +205,7 @@
 							</Dialog.Description>
 						</Dialog.Header>
 
-						<div class="my-6 max-h-[40vh] overflow-y-auto">
+						<div class="my-6 max-h-[45vh] overflow-y-auto">
 							<div class="space-y-4">
 								{#each history ? [...history].reverse() : [] as event}
 									<div class="hover:bg-muted/20 flex gap-4 rounded-lg border p-4 transition-colors">
