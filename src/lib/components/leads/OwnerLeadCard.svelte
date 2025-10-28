@@ -11,7 +11,9 @@
 	import User2 from '@lucide/svelte/icons/user-2';
 	import Clock from '@lucide/svelte/icons/clock';
 	import CalendarDays from '@lucide/svelte/icons/calendar-days';
-
+	import File from '@lucide/svelte/icons/file';
+	import Calculator from '@lucide/svelte/icons/calculator';
+	import { ArrowRight } from '@lucide/svelte';
 	type Lead = any;
 	let {
 		lead,
@@ -36,7 +38,6 @@
 		watchlistSaving?: boolean;
 		history?: any;
 	}>();
-
 	let historyDialogOpen = $state(false);
 
 	function formatDate(dateStr: string) {
@@ -207,9 +208,36 @@
 
 						<div class="my-6 max-h-[45vh] overflow-y-auto">
 							<div class="space-y-4">
+								<!-- {#if lead.next_action} -->
+								<!-- <div
+									class="hover:bg-muted/20 flex flex-col gap-4 rounded-lg border p-4 transition-colors"
+								>
+									<div class="flex w-full flex-row justify-between gap-x-3">
+										<div class="flex flex-col items-start gap-y-2">
+											<div class="flex flex-row items-start gap-x-3">
+												<div>
+													<ArrowRight class="size-6 text-amber-500" />
+												</div>
+												<div class="h-4">
+													<Badge
+														class="bg-amber-100 px-3 py-1 text-xs font-semibold tracking-wide text-amber-800"
+													>
+														NEXT ACTION EXPECTED BY
+													</Badge>
+												</div>
+											</div>
+										</div>
+										<span class="text-base font-medium">
+											{lead.assignments[0].role}
+										</span>
+									</div>
+								</div> -->
+								<!-- {/if} -->
 								{#each history ? [...history].reverse() : [] as event}
-									<div class="hover:bg-muted/20 flex gap-4 rounded-lg border p-4 transition-colors">
-										<div class="flex flex-row justify-between w-full gap-x-3">
+									<div
+										class="hover:bg-muted/20 flex flex-col gap-4 rounded-lg border p-4 transition-colors"
+									>
+										<div class="flex w-full flex-row justify-between gap-x-3">
 											<div class="flex flex-col items-start gap-y-2">
 												<div class="flex flex-row items-start gap-x-3">
 													<div>
@@ -219,6 +247,10 @@
 															<CalendarDays class="size-6 text-purple-500" />
 														{:else if event.type === 'inContact'}
 															<PhoneCall class="size-6 text-green-500" />
+														{:else if event.type === 'docsUploaded'}
+															<File class="size-6 text-yellow-500" />
+														{:else if event.type === 'estimateCreated'}
+															<Calculator class="size-6 text-pink-500" />
 														{:else if event.type === 'closed'}
 															<Info class="size-6 text-red-500" />
 														{:else}
@@ -234,7 +266,11 @@
 																		? 'bg-green-100 text-green-800'
 																		: event.type === 'inspectionScheduled'
 																			? 'bg-purple-100 text-purple-800'
-																			: 'bg-red-100 text-red-800'
+																			: event.type === 'docsUploaded'
+																				? 'bg-yellow-100 text-yellow-800'
+																				: event.type === 'estimateCreated'
+																					? 'bg-pink-100 text-pink-800'
+																					: 'bg-red-100 text-red-800'
 															} px-3 py-1 text-xs font-semibold tracking-wide`}
 														>
 															{event.type.replace(/([A-Z])/g, ' $1').toUpperCase()}
@@ -243,13 +279,29 @@
 												</div>
 												<span class="text-base font-medium">
 													{#if event.type === 'salesRepAssigned'}
-														Lead assigned to {event.assignee?.name}
+														Lead assigned to <a
+															href="/user/profile/{event.assignee?.id}"
+															class="font-medium text-primary transition-colors"
+															>{event.assignee?.name}</a
+														>
 													{:else if event.type === 'inContact'}
 														Initial contact made with lead
 													{:else if event.type === 'inspectionScheduled'}
 														Property inspection scheduled
 													{:else if event.type === 'closed'}
 														Lead closed
+													{:else if event.type === 'docsUploaded'}
+														Documents uploaded by <a
+															href="/user/profile/{event.assignor?.id}"
+															class="font-medium text-primary transition-colors"
+															>{event.assignor?.name}</a
+														>
+													{:else if event.type === 'estimateCreated'}
+														Final Estimate created by <a
+															href="/user/profile/{event.assignor?.id}"
+															class="font-medium text-primary transition-colors"
+															>{event.assignor?.name}</a
+														>
 													{/if}
 												</span>
 											</div>
@@ -261,36 +313,38 @@
 												<div class="text-muted-foreground text-xs text-nowrap">
 													Updated by <a
 														href="/user/profile/{event.assignor?.id}"
-														class="font-medium transition-colors text-primary"
+														class="font-medium text-primary transition-colors"
 														>{event.assignor?.name}</a
 													>
 												</div>
 											</div>
-
-											{#if event.type === 'inspectionScheduled' && event.date}
-												<div class="bg-muted/30 mt-4 rounded-lg p-4 text-sm">
-													<div class="mb-3 text-lg font-semibold">Inspection Details</div>
-													<div class="flex items-center gap-3 text-base">
-														<CalendarDays class="size-5 text-primary" />
-														<span
-															>Scheduled for <span class="font-medium"
-																>{formatDate(event.date)}</span
-															></span
-														>
-													</div>
-													{#if event.inspectors?.length}
-														<div class="mt-3">
-															<div class="mb-2 font-medium">Assigned Inspectors:</div>
-															<ul class="list-inside list-disc space-y-1">
-																{#each event.inspectors as inspector}
-																	<li>{inspector.name}</li>
-																{/each}
-															</ul>
-														</div>
-													{/if}
-												</div>
-											{/if}
 										</div>
+										<!-- Details: Inspection Scheduled -->
+										{#if event.type === 'inspectionScheduled' && event.date}
+											<div class="bg-muted/30 w-full rounded-lg text-sm">
+												<div class="mb-1 flex items-center gap-3 text-base">
+													<CalendarDays class="size-5 text-primary" />
+													<span
+														>Scheduled for <span class="font-medium">{formatDate(event.date)}</span
+														></span
+													>
+												</div>
+
+												<div class="">
+													<div class="flex items-center gap-3">
+														<User2 class="size-5 text-primary" />
+														<div>
+															<a
+																href="/user/profile/{event.assignee?.id}"
+																class="font-medium text-primary transition-colors"
+															>
+																{event.assignee?.name}
+															</a>
+														</div>
+													</div>
+												</div>
+											</div>
+										{/if}
 									</div>
 								{/each}
 

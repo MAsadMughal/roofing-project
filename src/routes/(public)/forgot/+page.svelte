@@ -36,50 +36,63 @@
   }
 </script>
 
-<div class="container mx-auto flex min-h-screen items-center justify-center">
-  <Card class="w-full max-w-lg border shadow-lg">
-    <CardHeader>
-      <div class="space-y-2 text-center">
-        <h1 class="text-3xl font-bold tracking-tight">Forgot password</h1>
-        <p class="text-sm text-muted-foreground">Enter your email to receive a password reset link.</p>
-      </div>
+<div class="relative flex min-h-screen flex-col items-center justify-center px-4">
+  <div class="absolute top-8 flex items-center gap-2">
+    <img
+      src="https://dcassetcdn.com/design_img/3656568/47349/47349_20884214_3656568_d2aa512e_image.png"
+      alt="Logo"
+      class="h-10 w-auto drop-shadow-sm"
+    />
+    <h1 class="text-xl font-semibold text-slate-800 dark:text-slate-200">RoofLink</h1>
+  </div>
+
+  <Card class="w-full hover:shadow-2xl max-w-md rounded-2xl border border-purple-100 bg-white/80 shadow-xl backdrop-blur-md dark:border-purple-900 dark:bg-[#1a1335]/80">
+    <CardHeader class="pb-2 text-center">
+      <h1 class="bg-gradient-to-r from-indigo-600 to-violet-600 bg-clip-text text-3xl font-semibold tracking-tight text-transparent">Forgot password</h1>
+      <p class="mt-1 text-sm text-slate-500 dark:text-slate-400">Enter your email to receive a password reset link.</p>
     </CardHeader>
 
-    <CardContent>
-      <form onsubmit={submit} class="space-y-6">
+    <CardContent class="pt-6">
+      <form onsubmit={submit} class="space-y-5">
         <div class="space-y-2">
-          <Label for="email" class="font-medium">Email address</Label>
+          <Label for="email" class="font-medium text-slate-700 dark:text-slate-300">Email address</Label>
           <Input id="email" type="email" bind:value={email} required class="w-full" />
         </div>
 
         {#if error}
-          <div class="rounded-md bg-destructive/15 p-3">
-            <p class="text-sm font-medium text-destructive">{error}</p>
+          <div class="rounded-md bg-red-100 p-3 dark:bg-red-900/20">
+            <p class="text-sm font-medium text-red-600 dark:text-red-400">{error}</p>
           </div>
         {/if}
 
         {#if message}
-          <div class="rounded-md bg-emerald-600/10 p-3">
-            <p class="text-sm font-medium text-emerald-700">{message}</p>
+          <div class="rounded-md bg-emerald-600/10 p-3 dark:bg-emerald-900/10">
+            <p class="text-sm font-medium text-emerald-700 dark:text-emerald-300">{message}</p>
           </div>
         {/if}
 
         {#if devResetUrl}
-          <div class="text-xs text-muted-foreground">
-            Dev reset link: <a class="text-primary underline" href={devResetUrl}>{devResetUrl}</a>
+          <div class="text-xs text-slate-500 dark:text-slate-400">
+            Dev reset link: <a class="text-purple-600 dark:text-purple-400 underline" href={devResetUrl}>{devResetUrl}</a>
           </div>
         {/if}
 
-        <Button type="submit" class="w-full" variant="default" size="lg" disabled={loading}>
+        <Button
+          type="submit"
+          class="w-full bg-gradient-to-r from-purple-600 via-indigo-600 to-purple-700 font-medium text-white shadow-md transition-all duration-300 hover:from-purple-700 hover:via-indigo-700 hover:to-purple-800"
+          variant="default"
+          size="lg"
+          disabled={loading}
+        >
           {loading ? 'Sending reset link...' : 'Send reset link'}
         </Button>
       </form>
     </CardContent>
 
-    <CardFooter class="flex flex-col space-y-4 border-t p-6">
-      <p class="text-center text-sm text-muted-foreground">
+    <CardFooter class="flex flex-col space-y-3 border-t border-purple-100 p-6 dark:border-purple-900">
+      <p class="text-center text-sm text-slate-500 dark:text-slate-400">
         Remembered your password?
-        <a href="/login" class="font-medium text-primary hover:underline">Sign in</a>
+        <a href="/login" class="font-medium text-purple-600 hover:underline dark:text-purple-400">Sign in</a>
       </p>
     </CardFooter>
   </Card>

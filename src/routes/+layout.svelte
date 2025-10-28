@@ -36,41 +36,6 @@
 <div class="app bg-slate-50 dark:bg-slate-900">
 	<Header />
 
-	{#if segments.length > 0}
-		<div class="mx-auto w-full max-w-7xl px-6 py-4">
-			<Breadcrumb.Root>
-				<Breadcrumb.List>
-					<Breadcrumb.Item>
-						<Breadcrumb.Link 
-							href="/dashboard" 
-							class="text-slate-600 hover:text-indigo-600 dark:text-slate-400 dark:hover:text-indigo-400 transition-colors"
-						>
-							Home
-						</Breadcrumb.Link>
-					</Breadcrumb.Item>
-					{#each segments as segment, i}
-						<Breadcrumb.Separator class="text-slate-400 dark:text-slate-600" />
-						<Breadcrumb.Item>
-							{#if i === segments.length - 1}
-								<Breadcrumb.Page 
-									class="font-medium text-slate-800 dark:text-slate-200"
-								>
-									{segment.label}
-								</Breadcrumb.Page>
-							{:else}
-								<Breadcrumb.Link 
-									href={segment.href} 
-									class="text-slate-600 hover:text-indigo-600 dark:text-slate-400 dark:hover:text-indigo-400 transition-colors"
-								>
-									{segment.label}
-								</Breadcrumb.Link>
-							{/if}
-						</Breadcrumb.Item>
-					{/each}
-				</Breadcrumb.List>
-			</Breadcrumb.Root>
-		</div>
-	{/if}
 
 	<main class="mx-auto w-full max-w-7xl px-6 py-4">
 		{@render children()}

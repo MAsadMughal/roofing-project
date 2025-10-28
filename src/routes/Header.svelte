@@ -33,6 +33,7 @@
 		{ label: 'DASHBOARD', href: '/dashboard' },
 		{ label: 'LEADS', href: '/leads', ownerOnly: true },
 		{ label: 'SALES REP', href: '/rep', repOnly: true },
+		{ label: 'ESTIMATOR', href: '/estimator', estimatorOnly: true },
 		{ label: 'ESTIMATES', href: '/estimates' },
 		{ label: 'PROPOSALS', href: '/proposals' },
 		{ label: 'JOBS', href: '/jobs' },
@@ -72,13 +73,13 @@
 
 				<nav class="hidden items-center gap-5 md:flex">
 					{#if $page.data.user}
-						{#each links.filter((l) => (!l.ownerOnly || $page.data.user?.role === 'OWNER') && (!l.repOnly || $page.data.user?.role === 'REP')) as link}
+						{#each links.filter((l) => (!l.ownerOnly || $page.data.user?.role === 'OWNER') && (!l.repOnly || $page.data.user?.role === 'REP') && (!l.estimatorOnly || $page.data.user?.role === 'ESTIMATOR')) as link}
 							<a
 								href={link.href}
 								class={`relative px-3 py-2 text-[15px] font-medium tracking-wide transition-all hover:text-indigo-400 ${
 									isActive(link.href)
 										? 'font-semibold text-indigo-400 after:absolute after:bottom-0 after:left-0 after:h-0.5 after:w-full after:rounded-full after:bg-gradient-to-r after:from-indigo-400 after:to-violet-400 after:content-[""]'
-										: 'text-slate-600 hover:text-indigo-400 dark:text-slate-200'
+									: 'text-slate-600 hover:text-indigo-400 dark:text-slate-200'
 								}`}
 							>
 								{link.label}

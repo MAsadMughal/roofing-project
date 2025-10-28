@@ -361,7 +361,7 @@
 	</div>
 
 	<!-- Lead List -->
-	<section class="max-h-[calc(100vh-258px)] space-y-4 overflow-y-scroll">
+	<section class="max-h-[calc(100vh-206px)] space-y-4 overflow-y-auto">
 		{#each filtered as lead}
 			<OwnerLeadCard
 				{lead}

@@ -10,7 +10,7 @@ export const PATCH: RequestHandler = async (event) => {
     const leadId = BigInt(params.id ?? '');
     const user = locals.user!;
     const body = await request.json().catch(() => ({} as any));
-    const { status, inspectionDate, laborIds, assignedToId } = body ?? {};
+    const { status, inspectionDate, inspectorId, assignedToId } = body ?? {};
 
     // Allowed statuses per request
     const allowedStatuses = new Set(['assigned', 'in_contact', 'inspection_scheduled', 'closed']);
@@ -37,8 +37,8 @@ export const PATCH: RequestHandler = async (event) => {
         if (!inspectionDate) {
             return json({ error: 'inspectionDate is required' }, { status: 400 });
         }
-        if (!Array.isArray(laborIds) || laborIds.length === 0) {
-            return json({ error: 'At least one inspector (laborIds) is required' }, { status: 400 });
+        if (!inspectorId) {
+            return json({ error: 'inspectorId is required' }, { status: 400 });
         }
     }
 
@@ -50,8 +50,8 @@ export const PATCH: RequestHandler = async (event) => {
     if (inspectionDate !== undefined) {
         data.inspectionDate = inspectionDate ? new Date(inspectionDate) : null;
     }
-    if (Array.isArray(laborIds)) {
-        data.laborIds = laborIds.map((v: any) => BigInt(v));
+    if (inspectorId !== undefined) {
+        data.estimatorId = inspectorId ? BigInt(inspectorId) : null;
     }
 
     // Build history event
@@ -69,10 +69,11 @@ export const PATCH: RequestHandler = async (event) => {
         } else if (status === 'in_contact') {
             historyEvent = { type: 'inContact', assignor, at: new Date().toISOString() };
         } else if (status === 'inspection_scheduled') {
+            const inspector = await prisma.user.findUnique({ where: { id: BigInt(inspectorId) } }).catch(() => null);
             historyEvent = {
                 type: 'inspectionScheduled',
                 assignor,
-                assignee: Array.isArray(laborIds) ? laborIds.map((id: any) => ({ id: BigInt(id) })) : [],
+                assignee: { id: BigInt(inspectorId), name: `${inspector?.firstName ?? ''} ${inspector?.lastName ?? ''}`.trim() },
                 at: new Date().toISOString(),
                 date: inspectionDate || null
             };
@@ -85,12 +86,11 @@ export const PATCH: RequestHandler = async (event) => {
         where: { id: current.id },
         data: {
             ...data,
+            role: 'Estimator',
             history: historyEvent ? [...(current.history as any[] ?? []), historyEvent] as any : (current.history as any)
         }
     });
 
-   
+
     return json({ ok: true, assignment: updated });
 };
-
-

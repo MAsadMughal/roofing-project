@@ -12,7 +12,7 @@ export const GET: RequestHandler = async (event) => {
     const contractorId = event.locals.user?.contractorId ?? event.locals.user?.id;
     const users = await prisma.user.findMany({
         where: {
-            role: 'INSPECTOR',
+            role: { in: ['INSPECTOR', 'ESTIMATOR'] },
             OR: [
                 { contractorId: contractorId as unknown as bigint },
                 { id: contractorId as unknown as bigint }

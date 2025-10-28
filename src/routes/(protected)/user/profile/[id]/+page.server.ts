@@ -13,5 +13,3 @@ export const load: PageServerLoad = async (event) => {
   const data = await res.json();
   return { userProfile: data.profile, metrics: data.metrics };
 };
-
-
