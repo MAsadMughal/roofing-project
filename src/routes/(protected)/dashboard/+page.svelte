@@ -110,7 +110,7 @@
 	<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet" />
 </svelte:head>
 
-<div class="flex flex-col mx-auto gap-8 px-6 py-8 max-w-[1600px]">
+<div class="flex flex-col gap-8 px-6 py-8 ">
 	<div class="flex flex-col gap-6 md:flex-row md:items-center md:justify-between">
 		<div>
 			<h1 class="text-4xl font-bold tracking-tight text-gray-900 dark:text-gray-100">

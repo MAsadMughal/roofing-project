@@ -33,7 +33,7 @@
 		{ label: 'DASHBOARD', href: '/dashboard' },
 		{ label: 'LEADS', href: '/leads', ownerOnly: true },
 		{ label: 'SALES REP', href: '/rep', repOnly: true },
-		{ label: 'ESTIMATOR', href: '/estimator', estimatorOnly: true },
+		{ label: 'SITE DOCS', href: '/assignment-docs', estimatorOnly: true },
 		{ label: 'ESTIMATES', href: '/estimates' },
 		{ label: 'PROPOSALS', href: '/proposals' },
 		{ label: 'JOBS', href: '/jobs' },

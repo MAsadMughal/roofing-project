@@ -21,6 +21,7 @@ export const POST: RequestHandler = async ({ request, cookies }) => {
     // rotate session
     const sessionId = randomUUID();
     const expiresAt = new Date(Date.now() + 1000 * 60 * 60 * 24 * 7);
+    await prisma.session.deleteMany({ where: { userId: user.id } });
     await prisma.session.create({ data: { id: sessionId, userId: user.id, expiresAt } });
 
     cookies.set('session', sessionId, {

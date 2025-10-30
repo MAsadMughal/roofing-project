@@ -1,15 +1,15 @@
 <script>
-	import { createEventDispatcher, onMount } from 'svelte';
-	import { writable, derived } from 'svelte/store';
+	import { createEventDispatcher, onMount, onDestroy } from 'svelte';
+	import { writable, derived, get } from 'svelte/store';
 
 	// Props
 	export let tasks = []; // [{id, name, start: '2025-10-01', end: '2025-10-05', color}]
 	export let rowHeight = 44;
-	export let hourWidth = 20; // pixels per hour for fine-grain control
+	export let hourWidth = 20;
 
 	const dispatch = createEventDispatcher();
 
-	// Local reactive stores so we can mutate without replacing parent array immediately
+	// Local reactive stores for tasks
 	let tasksStore = writable([]);
 	$: tasksStore.set(tasks.map((t) => ({ ...t, start: new Date(t.start), end: new Date(t.end) })));
 
@@ -21,80 +21,147 @@
 		}
 		let min = new Date(Math.min(...$tasks.map((t) => t.start.getTime())));
 		let max = new Date(Math.max(...$tasks.map((t) => t.end.getTime())));
-		// add padding
 		min = new Date(min.getFullYear(), min.getMonth(), min.getDate() - 2);
 		max = new Date(max.getFullYear(), max.getMonth(), max.getDate() + 2);
 		return { min, max };
 	});
 
-	// Derived total duration in ms
 	const totalMs = derived(bounds, ($b) => $b.max - $b.min);
 
-	// Convert date to percentage position within timeline
 	function dateToPct(date, min, max) {
 		const total = max - min;
 		return ((date - min) / total) * 100;
 	}
 
-	// Dragging logic
-	let dragging = null; // {type: 'move'|'resize-left'|'resize-right', id, startX, origStart, origEnd}
+	// Drag state and improved pointer tracking (for best UX)
+	let dragging = null; // {type, id, startX, origX, origStart, origEnd}
+	let dragGhost = null;
+	let animationFrame;
 
+	function getTimelineEl() {
+		return document.querySelector('.gantt-timeline-inner');
+	}
+
+	// Unified pointer down logic for move and resize handles
 	function onPointerDown(e, task, type = 'move') {
+		// Avoid starting drag on right-click
+		if (e.button !== 0) return;
+		e.stopPropagation();
 		e.preventDefault();
-		const startX = e.clientX;
+
+		const timelineEl = getTimelineEl();
+		if (!timelineEl) return;
+
+		// Calculate pointer offset in timeline, supports touch and mouse
+		const pointerX = e.touches ? e.touches[0].clientX : e.clientX;
+
 		dragging = {
 			type,
 			id: task.id,
-			startX,
+			startX: pointerX,
 			origStart: new Date(task.start),
 			origEnd: new Date(task.end)
 		};
-		window.addEventListener('pointermove', onPointerMove);
-		window.addEventListener('pointerup', onPointerUp);
+
+		// Add UX enhancement: highlight bar being dragged
+		dragGhost = task.id;
+
+		// Attach listeners (capture phase to avoid event being swallowed)
+		window.addEventListener('pointermove', onPointerMove, { passive: false, capture: true });
+		window.addEventListener('pointerup', onPointerUp, { passive: false, capture: true });
+		document.body.style.cursor =
+			type === 'move' ? 'grabbing' : 'ew-resize';
+
+		// Prevent text selection while dragging
+		document.body.classList.add('gantt-noselect');
 	}
 
 	function onPointerMove(e) {
 		if (!dragging) return;
-		// compute delta in ms
-		const deltaPx = e.clientX - dragging.startX;
-		// get bounds width in px
-		const timelineEl = document.querySelector('.gantt-timeline-inner');
+		e.preventDefault();
+
+		const boundsObj = get(bounds);
+		const totalMsVal = get(totalMs);
+
+		const timelineEl = getTimelineEl();
 		if (!timelineEl) return;
+
+		const pointerX = e.touches ? e.touches[0].clientX : e.clientX;
+
 		const width = timelineEl.clientWidth;
-		const { min, max } = $bounds;
-		const msPerPx = $totalMs / width;
+		const msPerPx = totalMsVal / width;
+		const deltaPx = pointerX - dragging.startX;
 		const deltaMs = deltaPx * msPerPx;
 
-		tasksStore.update((list) =>
-			list.map((t) => {
-				if (t.id !== dragging.id) return t;
-				let newStart = new Date(t.start.getTime());
-				let newEnd = new Date(t.end.getTime());
-				if (dragging.type === 'move') {
-					newStart = new Date(dragging.origStart.getTime() + deltaMs);
-					newEnd = new Date(dragging.origEnd.getTime() + deltaMs);
-				} else if (dragging.type === 'resize-left') {
-					newStart = new Date(dragging.origStart.getTime() + deltaMs);
-					if (newStart >= newEnd) newStart = new Date(newEnd.getTime() - 1000 * 60 * 60); // min 1 hour
-				} else if (dragging.type === 'resize-right') {
-					newEnd = new Date(dragging.origEnd.getTime() + deltaMs);
-					if (newEnd <= newStart) newEnd = new Date(newStart.getTime() + 1000 * 60 * 60);
-				}
-				return { ...t, start: newStart, end: newEnd };
-			})
-		);
+		// Only update on animation frame to guarantee smoothness and avoid perf
+		if (animationFrame) cancelAnimationFrame(animationFrame);
+		animationFrame = requestAnimationFrame(() => {
+			tasksStore.update((list) =>
+				list.map((t) => {
+					if (t.id !== dragging.id) return t;
+					let newStart = new Date(t.start.getTime());
+					let newEnd = new Date(t.end.getTime());
+					if (dragging.type === 'move') {
+						newStart = new Date(dragging.origStart.getTime() + deltaMs);
+						newEnd = new Date(dragging.origEnd.getTime() + deltaMs);
+
+						// Clamp move to bounds
+						const boundsStart = boundsObj.min.getTime();
+						const boundsEnd = boundsObj.max.getTime();
+						const taskDuration = dragging.origEnd - dragging.origStart;
+
+						if (newStart < boundsStart) {
+							newStart = new Date(boundsStart);
+							newEnd = new Date(boundsStart + taskDuration);
+						}
+						if (newEnd > boundsEnd) {
+							newEnd = new Date(boundsEnd);
+							newStart = new Date(boundsEnd - taskDuration);
+						}
+					} else if (dragging.type === 'resize-left') {
+						newStart = new Date(dragging.origStart.getTime() + deltaMs);
+						// Clamp left resize
+						if (newStart >= newEnd) {
+							newStart = new Date(newEnd.getTime() - 1000 * 60 * 60); // min 1 hour
+						}
+						if (newStart < boundsObj.min) {
+							newStart = new Date(boundsObj.min);
+						}
+					} else if (dragging.type === 'resize-right') {
+						newEnd = new Date(dragging.origEnd.getTime() + deltaMs);
+						// Clamp right resize
+						if (newEnd <= newStart) {
+							newEnd = new Date(newStart.getTime() + 1000 * 60 * 60);
+						}
+						if (newEnd > boundsObj.max) {
+							newEnd = new Date(boundsObj.max);
+						}
+					}
+					return { ...t, start: newStart, end: newEnd };
+				})
+			);
+		});
 	}
 
 	function onPointerUp() {
 		if (!dragging) return;
-		// emit update for single task
 		const id = dragging.id;
-		dragging = null;
-		window.removeEventListener('pointermove', onPointerMove);
-		window.removeEventListener('pointerup', onPointerUp);
 
-		// Notify parent with updated task (convert dates back to ISO strings)
-		tasksStore.subscribe((list) => {
+		// Cleanup UI
+		document.body.classList.remove('gantt-noselect');
+		document.body.style.cursor = '';
+		dragGhost = null;
+		window.removeEventListener('pointermove', onPointerMove, true);
+		window.removeEventListener('pointerup', onPointerUp, true);
+
+		// Debounce any stray animation frames
+		if (animationFrame) {
+			cancelAnimationFrame(animationFrame);
+			animationFrame = null;
+		}
+
+		// Emit update
+		const unsub = tasksStore.subscribe((list) => {
 			const task = list.find((x) => x.id === id);
 			if (task)
 				dispatch('update', {
@@ -102,8 +169,35 @@
 					start: task.start.toISOString(),
 					end: task.end.toISOString()
 				});
-		})();
+		});
+		unsub();
+
+		dragging = null;
 	}
+
+	// For accessibility: Cancel drag on Esc
+	function cancelDrag() {
+		if (dragging) {
+			document.body.classList.remove('gantt-noselect');
+			document.body.style.cursor = '';
+			dragGhost = null;
+			window.removeEventListener('pointermove', onPointerMove, true);
+			window.removeEventListener('pointerup', onPointerUp, true);
+			dragging = null;
+		}
+	}
+	function onKeydown(e) {
+		if (e.key === 'Escape') {
+			cancelDrag();
+		}
+	}
+	onMount(() => {
+		window.addEventListener('keydown', onKeydown, true);
+	});
+	onDestroy(() => {
+		window.removeEventListener('keydown', onKeydown, true);
+		cancelDrag();
+	});
 
 	// Inline edit name
 	function onNameBlur(e, id) {
@@ -115,39 +209,36 @@
 
 	function getTaskById(id) {
 		let found;
-		tasksStore.subscribe((list) => {
+		const unsub = tasksStore.subscribe((list) => {
 			found = list.find((t) => t.id === id);
-		})();
+		});
+		unsub();
 		return found;
 	}
 
-	// Utility: format day header
 	function formatDateHeader(d) {
 		return d.toLocaleDateString(undefined, { weekday: 'short', month: 'short', day: 'numeric' });
 	}
 
-	// Small helpers to access derived values in non-reactive contexts
 	let boundsValue;
 	let totalMsValue;
 	bounds.subscribe((v) => (boundsValue = v));
 	totalMs.subscribe((v) => (totalMsValue = v));
 
-	// create a simple days array for header
 	function daysArray() {
 		const arr = [];
 		const start = new Date(
-			$bounds.min.getFullYear(),
-			$bounds.min.getMonth(),
-			$bounds.min.getDate()
+			get(bounds).min.getFullYear(),
+			get(bounds).min.getMonth(),
+			get(bounds).min.getDate()
 		);
-		const end = new Date($bounds.max.getFullYear(), $bounds.max.getMonth(), $bounds.max.getDate());
+		const end = new Date(get(bounds).max.getFullYear(), get(bounds).max.getMonth(), get(bounds).max.getDate());
 		for (let d = new Date(start); d <= end; d.setDate(d.getDate() + 1)) {
 			arr.push(new Date(d));
 		}
 		return arr;
 	}
 
-	// When parent updates tasks prop, sync local store
 	$: if (tasks)
 		tasksStore.set(tasks.map((t) => ({ ...t, start: new Date(t.start), end: new Date(t.end) })));
 </script>
@@ -162,7 +253,6 @@
 
 	<div class="gantt-grid" style="--row: {rowHeight}px;">
 		<div class="gantt-left">
-			<!-- left column: task names -->
 			{#if $tasksStore}
 				{#each $tasksStore as task, i}
 					<div class="gantt-row" style="height:{rowHeight}px">
@@ -172,6 +262,8 @@
 								class="name-edit"
 								on:blur={(e) => onNameBlur(e, task.id)}
 								on:keydown={(e) => e.key === 'Enter' && e.target.blur()}
+								tabindex="0"
+								aria-label="Edit task name"
 							>
 								{task.name}
 							</div>
@@ -190,42 +282,46 @@
 
 			<div class="gantt-timeline">
 				<div class="gantt-timeline-inner">
-					{#each $tasksStore as task, idx}
+					{#each $tasksStore as task, idx (task.id)}
 						{#if $bounds}
-							{#key task.id}
+							<div
+								class="task-bar {dragGhost === task.id ? 'dragging-bar' : ''}"
+								style="
+									left: {dateToPct(task.start, $bounds.min, $bounds.max)}%;
+									width: {dateToPct(task.end, $bounds.min, $bounds.max) - dateToPct(task.start, $bounds.min, $bounds.max)}%;
+									top: {idx * rowHeight + 8}px;
+									background: {task.color || `linear-gradient(90deg,#4f46e5,#06b6d4)`};
+									z-index: {dragGhost === task.id ? 10 : 2};
+									transition: box-shadow 0.08s, background 0.08s;
+								"
+								on:pointerdown={(e) => onPointerDown(e, task, 'move')}
+								tabindex="0"
+								role="slider"
+								aria-valuetext="Start: {task.start.toLocaleDateString()}, End: {task.end.toLocaleDateString()}"
+								aria-label="Move {task.name} task bar"
+							>
 								<div
-									class="task-bar"
-									style="left: {dateToPct(
-										task.start,
-										$bounds.min,
-										$bounds.max
-									)}%; width: {dateToPct(task.end, $bounds.min, $bounds.max) -
-										dateToPct(task.start, $bounds.min, $bounds.max)}%; top: {idx * rowHeight +
-										8}px; background: {task.color || `linear-gradient(90deg,#4f46e5,#06b6d4)`};"
-									on:pointerdown={(e) => onPointerDown(e, task, 'move')}
-								>
-									<div
-										class="handle left"
-										on:pointerdown={(e) => onPointerDown(e, task, 'resize-left')}
-									></div>
-									<div style="flex:1; text-overflow:ellipsis; overflow:hidden; white-space:nowrap">
-										{task.name}
-									</div>
-									<div
-										class="handle right"
-										on:pointerdown={(e) => onPointerDown(e, task, 'resize-right')}
-									></div>
+									class="handle left"
+									on:pointerdown|stopPropagation={(e) => onPointerDown(e, task, 'resize-left')}
+									tabindex="0"
+									aria-label="Resize {task.name} start"
+								></div>
+								<div style="flex:1; text-overflow:ellipsis; overflow:hidden; white-space:nowrap">
+									{task.name}
 								</div>
-							{/key}
+								<div
+									class="handle right"
+									on:pointerdown|stopPropagation={(e) => onPointerDown(e, task, 'resize-right')}
+									tabindex="0"
+									aria-label="Resize {task.name} end"
+								></div>
+							</div>
 						{/if}
 					{/each}
 
-					<!-- grid rows lines -->
 					{#each $tasksStore as _, i}
 						<div
-							style="position:absolute; left:0; right:0; top:{i * rowHeight +
-								rowHeight +
-								8}px; height:1px; background:#f3f4f6"
+							style="position:absolute; left:0; right:0; top:{i * rowHeight + rowHeight + 8}px; height:1px; background:#f3f4f6"
 						></div>
 					{/each}
 				</div>
@@ -233,13 +329,6 @@
 		</div>
 	</div>
 </div>
-
-<!-- Notes:
-    - Emits 'update' on pointerup with task object where start/end are ISO strings.
-    - Emits 'rename' when name is edited.
-    - Uses absolute positioning and percent math for placement.
-    - This is a single-file component; adapt styles and accessibility to your app.
-  -->
 
 <style>
 	.gantt {
@@ -327,13 +416,27 @@
 		box-shadow: 0 4px 14px rgba(30, 41, 59, 0.12);
 		cursor: grab;
 		user-select: none;
+		will-change: left, width;
+		transition: box-shadow 0.08s;
+	}
+	.task-bar:focus, .task-bar.dragging-bar {
+		box-shadow: 0 6px 20px 1px #6366f13f, 0 0 0 3px #4f46e570;
+		outline: none;
+		z-index: 12;
+	}
+	.task-bar.dragging-bar {
+		background: linear-gradient(90deg,#818cf8,#06b6d4) !important;
+		transition: background 0.1s, box-shadow 0.1s;
 	}
 	.handle {
-		width: 10px;
+		width: 13px;
 		height: 100%;
 		position: absolute;
 		top: 0;
 		cursor: ew-resize;
+		z-index: 2;
+		transition: background 0.13s;
+		background: rgba(0,0,0,0.00);
 	}
 	.handle.left {
 		left: 0;
@@ -345,7 +448,15 @@
 		border-top-right-radius: 8px;
 		border-bottom-right-radius: 8px;
 	}
+	.handle.left:hover, .handle.right:hover, .handle.left:focus, .handle.right:focus {
+		background: rgba(99,102,241,0.17);
+	}
 	.name-edit {
 		outline: none;
+		min-width: 40px;
+		background: transparent;
+	}
+	.gantt-noselect, .gantt-noselect * {
+		user-select: none !important;
 	}
 </style>

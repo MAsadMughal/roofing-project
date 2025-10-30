@@ -52,6 +52,7 @@
 	},
 	"dependencies": {
 		"@prisma/client": "^6.17.1",
+		"@supabase/supabase-js": "^2.78.0",
 		"@svar-ui/svelte-gantt": "^2.3.0",
 		"date-fns": "^4.1.0",
 		"dotenv": "^16.4.5",
