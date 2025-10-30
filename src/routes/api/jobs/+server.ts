@@ -42,7 +42,8 @@ export const POST: RequestHandler = async ({ request }) => {
 	const created = await prisma.job.create({
 		data: {
 			customerId: body.customer_id,
-			leadId: body.lead_id ?? null,
+            leadId: body.lead_id ?? null,
+            assignmentId: body.assignment_id ?? null,
 			title: body.title,
 			description: body.description ?? null,
 			status: body.status ?? 'scheduled',
@@ -51,7 +52,13 @@ export const POST: RequestHandler = async ({ request }) => {
 			endDate: body.end_date ? new Date(body.end_date) : null
 		}
 	});
-	return json(created, { status: 201 });
+    if (body.assignment_id) {
+        await prisma.assignment.update({
+            where: { id: BigInt(body.assignment_id) },
+            data: { latestJobId: created.id as unknown as bigint, lastStatusChangedAt: new Date(), status: 'job_created' }
+        }).catch(() => null);
+    }
+    return json(created, { status: 201 });
 };
 
 

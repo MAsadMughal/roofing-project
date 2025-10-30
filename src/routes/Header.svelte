@@ -37,7 +37,8 @@
 		{ label: 'ESTIMATES', href: '/estimates' },
 		{ label: 'PROPOSALS', href: '/proposals' },
 		{ label: 'JOBS', href: '/jobs' },
-		{ label: 'MEMBERS', href: '/members', ownerOnly: true }
+		{ label: 'MEMBERS', href: '/members', ownerOnly: true },
+		{ label: 'CHATS', href: '/chats' }
 	];
 
 	function isActive(path: string) {

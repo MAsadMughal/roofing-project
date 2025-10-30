@@ -14,6 +14,8 @@
 	import File from '@lucide/svelte/icons/file';
 	import Calculator from '@lucide/svelte/icons/calculator';
 	import { ArrowRight } from '@lucide/svelte';
+	import CheckCircle from '@lucide/svelte/icons/check-circle';
+	import Send from '@lucide/svelte/icons/send';
 	type Lead = any;
 	let {
 		lead,
@@ -251,6 +253,12 @@
 															<File class="size-6 text-yellow-500" />
 														{:else if event.type === 'estimateCreated'}
 															<Calculator class="size-6 text-pink-500" />
+														{:else if event.type === 'estimateSaved'}
+															<Calculator class="size-6 text-indigo-500" />
+														{:else if event.type === 'proposalSent'}
+															<Send class="size-6 text-cyan-500" />
+														{:else if event.type === 'proposalApproved'}
+															<CheckCircle class="size-6 text-emerald-500" />
 														{:else if event.type === 'closed'}
 															<Info class="size-6 text-red-500" />
 														{:else}
@@ -270,7 +278,13 @@
 																				? 'bg-yellow-100 text-yellow-800'
 																				: event.type === 'estimateCreated'
 																					? 'bg-pink-100 text-pink-800'
-																					: 'bg-red-100 text-red-800'
+																					: event.type === 'estimateSaved'
+																						? 'bg-indigo-100 text-indigo-800'
+																						: event.type === 'proposalSent'
+																							? 'bg-cyan-100 text-cyan-800'
+																							: event.type === 'proposalApproved'
+																								? 'bg-emerald-100 text-emerald-800'
+																								: 'bg-red-100 text-red-800'
 															} px-3 py-1 text-xs font-semibold tracking-wide`}
 														>
 															{event.type.replace(/([A-Z])/g, ' $1').toUpperCase()}
@@ -288,6 +302,20 @@
 														Initial contact made with lead
 													{:else if event.type === 'inspectionScheduled'}
 														Property inspection scheduled
+													{:else if event.type === 'proposalSent'}
+														Proposal sent {#if event.assignor}
+															by <a
+																href="/user/profile/{event.assignor?.id}"
+																class="font-medium text-primary transition-colors"
+															>{event.assignor?.name}</a>
+														{/if}
+													{:else if event.type === 'proposalApproved'}
+														Proposal approved {#if event.assignor}
+															by <a
+																href="/user/profile/{event.assignor?.id}"
+																class="font-medium text-primary transition-colors"
+															>{event.assignor?.name}</a>
+														{/if}
 													{:else if event.type === 'closed'}
 														Lead closed
 													{:else if event.type === 'docsUploaded'}
@@ -302,6 +330,11 @@
 															class="font-medium text-primary transition-colors"
 															>{event.assignor?.name}</a
 														>
+													{:else if event.type === 'estimateSaved'}
+														Estimate draft saved by <a
+															href="/user/profile/{event.assignor?.id}"
+															class="font-medium text-primary transition-colors"
+														>{event.assignor?.name}</a>
 													{/if}
 												</span>
 											</div>

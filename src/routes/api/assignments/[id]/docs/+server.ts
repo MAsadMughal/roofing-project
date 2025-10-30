@@ -38,7 +38,7 @@ export const POST: RequestHandler = async (event) => {
 
     const historyEvent = {
         type: 'docsUploaded',
-        assignor: { id: locals.user!.id, role: locals.user!.role, name: locals.user!.firstName + ' ' + locals.user!.lastName },
+        assignor: { id: locals.user!.id, role: locals.user!.role, name: locals.user!.firstName },
         at: new Date().toISOString(),
         count: docs.length
     } as any;

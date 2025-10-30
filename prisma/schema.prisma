@@ -20,6 +20,7 @@ model User {
   customerId   BigInt?  @map("customer_id")
   createdAt    DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
   updatedAt    DateTime @default(now()) @map("updated_at") @db.Timestamptz(6)
+  lastSeenAt   DateTime? @map("last_seen_at") @db.Timestamptz(6)
 
   sessions             Session[]
   customer             Customer?         @relation(fields: [customerId], references: [id], onDelete: SetNull)
@@ -126,6 +127,8 @@ model Assignment {
   estimator  User?      @relation("EstimatorAssignments", fields: [estimatorId], references: [id], onDelete: SetNull)
   docs       Docs[]
   estimates  Estimate[]
+  jobs       Job[]
+  proposals  Proposal[]
 
   @@index([leadId])
   @@index([assignedToId])
@@ -174,6 +177,7 @@ model Job {
   id            BigInt    @id @default(autoincrement()) @db.BigInt
   customerId    BigInt    @map("customer_id")
   leadId        BigInt?   @map("lead_id")
+  assignmentId  BigInt?   @map("assignment_id")
   title         String
   description   String?
   status        String    @default("scheduled") // scheduled, in_progress, completed, canceled
@@ -186,11 +190,13 @@ model Job {
 
   customer  Customer   @relation(fields: [customerId], references: [id], onDelete: Cascade)
   lead      Lead?      @relation(fields: [leadId], references: [id], onDelete: SetNull)
+  assignment Assignment? @relation(fields: [assignmentId], references: [id], onDelete: SetNull)
   estimates Estimate[]
   invoices  Invoice[]
 
   @@index([customerId])
   @@index([leadId])
+  @@index([assignmentId])
   @@map("jobs")
 }
 
@@ -245,7 +251,9 @@ model EstimateItem {
 
 model Proposal {
   id            BigInt    @id @default(autoincrement()) @db.BigInt
+  assignmentId  BigInt    @map("assignment_id")
   estimateId    BigInt    @unique @map("estimate_id")
+  subject       String?
   content       String?
   status        String    @default("draft") // draft, sent, viewed, signed, declined
   sentAt        DateTime? @map("sent_at") @db.Timestamptz(6)
@@ -257,6 +265,7 @@ model Proposal {
   createdAt     DateTime  @default(now()) @map("created_at") @db.Timestamptz(6)
   updatedAt     DateTime  @updatedAt @map("updated_at") @db.Timestamptz(6)
 
+  assignment Assignment @relation(fields: [assignmentId], references: [id], onDelete: Cascade)
   estimate Estimate @relation(fields: [estimateId], references: [id], onDelete: Cascade)
 
   @@map("proposals")
@@ -341,6 +350,7 @@ model ChatParticipant {
   id      BigInt @id @default(autoincrement()) @db.BigInt
   userId  BigInt
   chatId  BigInt
+  lastReadAt DateTime? @map("last_read_at") @db.Timestamptz(6)
 
   user User @relation(fields: [userId], references: [id])
   chat Chat @relation(fields: [chatId], references: [id])
