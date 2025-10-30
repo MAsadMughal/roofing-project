@@ -52,7 +52,10 @@
 	},
 	"dependencies": {
 		"@prisma/client": "^6.17.1",
+		"@svar-ui/svelte-gantt": "^2.3.0",
+		"date-fns": "^4.1.0",
 		"dotenv": "^16.4.5",
-		"postgres": "^3.4.7"
+		"postgres": "^3.4.7",
+		"svelte-dnd-action": "^0.9.66"
 	}
 }

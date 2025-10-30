@@ -5,17 +5,16 @@
 	import * as Dialog from '$lib/components/ui/dialog/index.js';
 	import Label from '$lib/components/ui/label/label.svelte';
 	import * as Select from '$lib/components/ui/select/index.js';
+	import Calculator from '@lucide/svelte/icons/calculator';
+	import CalendarDays from '@lucide/svelte/icons/calendar-days';
+	import CheckCircle from '@lucide/svelte/icons/check-circle';
+	import Clock from '@lucide/svelte/icons/clock';
+	import File from '@lucide/svelte/icons/file';
 	import Info from '@lucide/svelte/icons/info';
 	import Loader2 from '@lucide/svelte/icons/loader-2';
 	import PhoneCall from '@lucide/svelte/icons/phone-call';
-	import User2 from '@lucide/svelte/icons/user-2';
-	import Clock from '@lucide/svelte/icons/clock';
-	import CalendarDays from '@lucide/svelte/icons/calendar-days';
-	import File from '@lucide/svelte/icons/file';
-	import Calculator from '@lucide/svelte/icons/calculator';
-	import { ArrowRight } from '@lucide/svelte';
-	import CheckCircle from '@lucide/svelte/icons/check-circle';
 	import Send from '@lucide/svelte/icons/send';
+	import User2 from '@lucide/svelte/icons/user-2';
 	type Lead = any;
 	let {
 		lead,

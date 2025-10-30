@@ -37,7 +37,7 @@
 	<Header />
 
 
-	<main class="mx-auto w-full max-w-7xl px-6 py-4">
+	<main class="w-full px-6 py-4">
 		{@render children()}
 	</main>
 </div>
