@@ -32,6 +32,7 @@
 	const links = [
 		{ label: 'DASHBOARD', href: '/dashboard' },
 		{ label: 'LEADS', href: '/leads', ownerOnly: true },
+		{ label: 'ASSIGNMENTS', href: '/assignments', ownerOnly: true },
 		{ label: 'SALES REP', href: '/rep', repOnly: true },
 		{ label: 'SITE DOCS', href: '/assignment-docs', estimatorOnly: true },
 		{ label: 'ESTIMATES', href: '/estimates' },
@@ -80,10 +81,15 @@
 								class={`relative px-3 py-2 text-[15px] font-medium tracking-wide transition-all hover:text-indigo-400 ${
 									isActive(link.href)
 										? 'font-semibold text-indigo-400 after:absolute after:bottom-0 after:left-0 after:h-0.5 after:w-full after:rounded-full after:bg-gradient-to-r after:from-indigo-400 after:to-violet-400 after:content-[""]'
-									: 'text-slate-600 hover:text-indigo-400 dark:text-slate-200'
+										: 'text-slate-600 hover:text-indigo-400 dark:text-slate-200'
 								}`}
 							>
 								{link.label}
+								{#if link.href === '/chats' && $page.data.unreadChatCount > 0}
+									<span class="absolute -right-0.5 -top-0.5 flex h-4 w-4 items-center justify-center rounded-full bg-red-500 text-[10px] font-bold text-white shadow-lg">
+										{$page.data.unreadChatCount > 99 ? '99+' : $page.data.unreadChatCount}
+									</span>
+								{/if}
 							</a>
 						{/each}
 					{/if}
