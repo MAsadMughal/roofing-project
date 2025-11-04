@@ -113,7 +113,7 @@ export const POST: RequestHandler = async (event) => {
 	if (estimate.status !== 'draft') {
 		const historyEvent = {
 			type: 'estimateCreated',
-			assignor: { id: Number(user.id), name: user.firstName + ' ' + user.lastName, role: user.role }, // Convert BigInt to Number
+			assignor: { id: Number(user.id), name: user.firstName , role: user.role }, // Convert BigInt to Number
 			at: new Date().toISOString(),
 			estimateId: Number(estimate.id) // Convert BigInt to Number
 		} as any;

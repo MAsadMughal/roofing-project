@@ -30,35 +30,103 @@ export const GET: RequestHandler = async ({ url }) => {
 				] } : {}
 			]
 		},
-		include: { customer: { select: { firstName: true, lastName: true } } },
+		include: {
+			customer: {
+				select: {
+					id: true,
+					firstName: true,
+					lastName: true,
+					email: true,
+					phone: true,
+					addressLine1: true,
+					addressLine2: true,
+					city: true,
+					state: true,
+					postalCode: true
+				}
+			},
+			invoices: {
+				select: {
+					id: true,
+					totalAmount: true,
+					status: true
+				},
+				orderBy: { createdAt: 'desc' }
+			}
+		},
 		orderBy: { createdAt: 'desc' },
 		take: 100
 	});
-	return json(jobs.map((j) => ({ ...j, first_name: j.customer.firstName, last_name: j.customer.lastName })));
+
+	return json(
+		jobs.map((j) => {
+			const totalAmount = j.invoices?.reduce((sum, inv) => sum + Number(inv.totalAmount || 0), 0) || 0;
+			const address = [
+				j.customer.addressLine1,
+				j.customer.addressLine2,
+				j.customer.city,
+				j.customer.state,
+				j.customer.postalCode
+			]
+				.filter(Boolean)
+				.join(', ');
+
+			return {
+				id: String(j.id),
+				customer_id: String(j.customerId),
+				lead_id: j.leadId ? String(j.leadId) : null,
+				assignment_id: j.assignmentId ? String(j.assignmentId) : null,
+				title: j.title,
+				description: j.description,
+				status: j.status,
+				progress: j.progress || 0,
+				scheduled_date: j.scheduledDate?.toISOString() || null,
+				start_date: j.startDate?.toISOString() || null,
+				end_date: j.endDate?.toISOString() || null,
+				crew_details: j.crewDetails,
+				created_at: j.createdAt.toISOString(),
+				updated_at: j.updatedAt.toISOString(),
+				first_name: j.customer.firstName,
+				last_name: j.customer.lastName,
+				customer_email: j.customer.email,
+				customer_phone: j.customer.phone,
+				customer_address: address,
+				total_amount: totalAmount
+			};
+		})
+	);
 };
 
 export const POST: RequestHandler = async ({ request }) => {
 	const body = await request.json();
 	const created = await prisma.job.create({
 		data: {
-			customerId: body.customer_id,
-            leadId: body.lead_id ?? null,
-            assignmentId: body.assignment_id ?? null,
+			customerId: BigInt(body.customer_id),
+			leadId: body.lead_id ? BigInt(body.lead_id) : null,
+			assignmentId: body.assignment_id ? BigInt(body.assignment_id) : null,
 			title: body.title,
 			description: body.description ?? null,
 			status: body.status ?? 'scheduled',
+			progress: body.progress ?? 0,
 			scheduledDate: body.scheduled_date ? new Date(body.scheduled_date) : null,
 			startDate: body.start_date ? new Date(body.start_date) : null,
-			endDate: body.end_date ? new Date(body.end_date) : null
+			endDate: body.end_date ? new Date(body.end_date) : null,
+			crewDetails: body.crew_details ?? null
 		}
 	});
-    if (body.assignment_id) {
-        await prisma.assignment.update({
-            where: { id: BigInt(body.assignment_id) },
-            data: { latestJobId: created.id as unknown as bigint, lastStatusChangedAt: new Date(), status: 'job_created' }
-        }).catch(() => null);
-    }
-    return json(created, { status: 201 });
+	if (body.assignment_id) {
+		await prisma.assignment
+			.update({
+				where: { id: BigInt(body.assignment_id) },
+				data: {
+					latestJobId: created.id,
+					lastStatusChangedAt: new Date(),
+					status: 'job_created'
+				}
+			})
+			.catch(() => null);
+	}
+	return json(created, { status: 201 });
 };
 
 
