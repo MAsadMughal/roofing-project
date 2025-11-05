@@ -89,10 +89,55 @@ export const POST: RequestHandler = async (event) => {
     requireRole(event, 'OWNER');
     const { request } = event;
 	const body = await request.json();
-	const { customer_id, title, description, status, source } = body;
+	const { customer_id, title, description, status, source, first_name, last_name, email, phone } = body;
+	
+	let customerId: bigint | null = null;
+	
+	// If customer data provided, create or find customer
+	if (first_name && last_name) {
+		if (email) {
+			// Try to find existing customer by email, otherwise create
+			const existing = await prisma.customer.findUnique({ where: { email } });
+			if (existing) {
+				customerId = existing.id;
+				// Update existing customer
+				await prisma.customer.update({
+					where: { id: customerId },
+					data: {
+						firstName: first_name,
+						lastName: last_name,
+						...(phone && { phone })
+					}
+				});
+			} else {
+				const customer = await prisma.customer.create({
+					data: {
+						firstName: first_name,
+						lastName: last_name,
+						email,
+						...(phone && { phone })
+					}
+				});
+				customerId = customer.id;
+			}
+		} else {
+			// No email, just create new customer
+			const customer = await prisma.customer.create({
+				data: {
+					firstName: first_name,
+					lastName: last_name,
+					...(phone && { phone })
+				}
+			});
+			customerId = customer.id;
+		}
+	} else if (customer_id != null) {
+		customerId = BigInt(customer_id);
+	}
+	
 	const lead = await prisma.lead.create({
 		data: {
-			customerId: customer_id != null ? BigInt(customer_id) : null,
+			customerId,
 			title,
 			description: description ?? null,
 			status: status ?? undefined,

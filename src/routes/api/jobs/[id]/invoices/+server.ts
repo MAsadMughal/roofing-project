@@ -97,6 +97,16 @@ export const POST: RequestHandler = async (event) => {
 			return new Response('Job not found', { status: 404 });
 		}
 
+		// Check if job already has an invoice (only one invoice per job allowed)
+		const existingInvoice = await prisma.invoice.findFirst({
+			where: { jobId },
+			select: { id: true }
+		});
+
+		if (existingInvoice) {
+			return new Response('Job already has an invoice. Only one invoice per job is allowed.', { status: 400 });
+		}
+
 		// Calculate totals
 		const subtotal = items.reduce((sum: number, item: any) => {
 			const quantity = Number(item.quantity) || 0;
@@ -173,6 +183,48 @@ export const POST: RequestHandler = async (event) => {
 				: null,
 			createdAt: invoice.createdAt.toISOString()
 		});
+
+		// Create feed item for invoice creation
+		await prisma.jobFeedItem.create({
+			data: {
+				jobId,
+				type: 'invoice_created',
+				content: `Invoice created${invoice.invoiceNumber ? ` (${invoice.invoiceNumber})` : ''} - Total: $${totalAmount.toFixed(2)}`,
+				createdById: userId,
+				taggedUserIds: [],
+				metadata: { invoiceId: String(invoice.id), invoiceNumber: invoice.invoiceNumber, totalAmount: Number(totalAmount) }
+			}
+		});
+
+		return json({
+			id: String(invoice.id),
+			invoiceNumber: invoice.invoiceNumber,
+			status: invoice.status,
+			subtotal: Number(invoice.subtotal),
+			taxRate: invoice.taxRate ? Number(invoice.taxRate) : 0,
+			taxAmount: Number(invoice.taxAmount),
+			totalAmount: Number(invoice.totalAmount),
+			dueDate: invoice.dueDate?.toISOString() || null,
+			notes: invoice.notes,
+			items: invoice.items.map((item) => ({
+				id: String(item.id),
+				name: item.name,
+				description: item.description,
+				quantity: Number(item.quantity),
+				unitPrice: Number(item.unitPrice),
+				total: Number(item.total)
+			})),
+			payments: [],
+			createdBy: invoice.createdBy
+				? {
+						id: String(invoice.createdBy.id),
+						firstName: invoice.createdBy.firstName,
+						lastName: invoice.createdBy.lastName,
+						email: invoice.createdBy.email
+				  }
+				: null,
+			createdAt: invoice.createdAt.toISOString()
+		});
 	} catch (error) {
 		console.error('Error creating invoice:', error);
 		return new Response('Failed to create invoice', { status: 500 });
@@ -190,19 +242,35 @@ export const PUT: RequestHandler = async (event) => {
 	}
 
 	const jobId = BigInt(params.id);
-	const { invoiceId, status, items, taxRate, dueDate, notes } = await request.json();
+	const { invoiceId, status, items, taxRate, dueDate, notes, invoiceNumber } = await request.json();
 
 	if (!invoiceId) {
 		return new Response('Invoice ID is required', { status: 400 });
 	}
 
 	try {
+		// Check if invoice exists and get current status
+		const existingInvoice = await prisma.invoice.findUnique({
+			where: { id: BigInt(invoiceId), jobId },
+			include: { payments: true }
+		});
+
+		if (!existingInvoice) {
+			return new Response('Invoice not found', { status: 404 });
+		}
+
+		// Prevent editing if invoice is paid or void
+		if (existingInvoice.status === 'paid' || existingInvoice.status === 'void') {
+			return new Response('Cannot edit paid or void invoice. Only draft, sent, or overdue invoices can be edited.', { status: 400 });
+		}
+
 		let updateData: any = {};
 
 		if (status) updateData.status = status;
 		if (dueDate) updateData.dueDate = new Date(dueDate);
 		if (notes !== undefined) updateData.notes = notes;
 		if (taxRate !== undefined) updateData.taxRate = Number(taxRate);
+		if (invoiceNumber !== undefined) updateData.invoiceNumber = invoiceNumber;
 
 		// If items are provided, recalculate totals
 		if (items && Array.isArray(items)) {
@@ -256,6 +324,9 @@ export const PUT: RequestHandler = async (event) => {
 			include: {
 				items: true,
 				payments: true,
+				job: {
+					select: { id: true, status: true }
+				},
 				createdBy: {
 					select: {
 						id: true,
@@ -263,6 +334,49 @@ export const PUT: RequestHandler = async (event) => {
 						lastName: true,
 						email: true
 					}
+				}
+			}
+		});
+
+		// If invoice status is set to "paid", close the job
+		if (status === 'paid' && updated.job && updated.job.status !== 'completed') {
+			await prisma.job.update({
+				where: { id: updated.job.id },
+				data: { status: 'completed' }
+			});
+		}
+
+		// Create feed item for invoice update
+		const oldStatus = existingInvoice.status;
+		const oldTotal = Number(existingInvoice.subtotal) + Number(existingInvoice.taxAmount);
+		const newTotal = Number(updated.totalAmount);
+		
+		let feedContent = '';
+		if (status && status !== oldStatus) {
+			feedContent = `Invoice status changed from "${oldStatus}" to "${status}"`;
+			if (status === 'paid') {
+				feedContent += ' (Job automatically closed)';
+			}
+		} else if (items && Array.isArray(items)) {
+			feedContent = `Invoice updated - Total changed from $${oldTotal.toFixed(2)} to $${newTotal.toFixed(2)}`;
+		} else {
+			feedContent = `Invoice updated${updated.invoiceNumber ? ` (${updated.invoiceNumber})` : ''}`;
+		}
+
+		await prisma.jobFeedItem.create({
+			data: {
+				jobId,
+				type: 'invoice_updated',
+				content: feedContent,
+				createdById: user.id as unknown as bigint,
+				taggedUserIds: [],
+				metadata: { 
+					invoiceId: String(updated.id), 
+					invoiceNumber: updated.invoiceNumber,
+					oldStatus,
+					newStatus: updated.status,
+					oldTotal,
+					newTotal: Number(updated.totalAmount)
 				}
 			}
 		});
@@ -304,6 +418,66 @@ export const PUT: RequestHandler = async (event) => {
 	} catch (error) {
 		console.error('Error updating invoice:', error);
 		return new Response('Failed to update invoice', { status: 500 });
+	}
+};
+
+export const DELETE: RequestHandler = async (event) => {
+	await requireAuth(event);
+	const { params, request, locals } = event;
+	const user = locals.user!;
+
+	// Only OWNER and REP can delete invoices
+	if (!hasRole(event, ['OWNER', 'REP'])) {
+		return new Response('Forbidden', { status: 403 });
+	}
+
+	const jobId = BigInt(params.id);
+	const { invoiceId } = await request.json();
+
+	if (!invoiceId) {
+		return new Response('Invoice ID is required', { status: 400 });
+	}
+
+	try {
+		// Check if invoice exists and get current status
+		const invoice = await prisma.invoice.findUnique({
+			where: { id: BigInt(invoiceId), jobId }
+		});
+
+		if (!invoice) {
+			return new Response('Invoice not found', { status: 404 });
+		}
+
+		// Prevent deletion if invoice is paid or void
+		if (invoice.status === 'paid' || invoice.status === 'void') {
+			return new Response('Cannot delete paid or void invoice. Only draft, sent, or overdue invoices can be deleted.', { status: 400 });
+		}
+
+		// Store invoice info for feed item
+		const invoiceNumber = invoice.invoiceNumber;
+		const totalAmount = Number(invoice.totalAmount);
+
+		// Delete invoice (items will be cascade deleted)
+		await prisma.invoice.delete({
+			where: { id: BigInt(invoiceId), jobId }
+		});
+
+		// Create feed item for invoice deletion
+		await prisma.jobFeedItem.create({
+			data: {
+				jobId,
+				type: 'invoice_deleted',
+				content: `Invoice deleted${invoiceNumber ? ` (${invoiceNumber})` : ''} - Total: $${totalAmount.toFixed(2)}`,
+				createdById: user.id as unknown as bigint,
+				taggedUserIds: [],
+				metadata: { invoiceId: String(invoiceId), invoiceNumber, totalAmount }
+			}
+		});
+
+		return new Response(null, { status: 204 });
+	} catch (error) {
+		console.error('Error deleting invoice:', error);
+		return new Response('Failed to delete invoice', { status: 500 });
 	}
 };
 

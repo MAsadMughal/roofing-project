@@ -45,6 +45,7 @@ model User {
   jobTodosCreated   JobTodo[]          @relation("JobTodosCreated")
   jobTodosCompleted JobTodo[]           @relation("JobTodosCompleted")
   invoicesCreated   Invoice[]           @relation("CreatedInvoices")
+  jobParticipants   JobParticipant[]    @relation("JobParticipants")
   
   @@map("users")
 }
@@ -191,6 +192,7 @@ model Job {
   title         String
   description   String?
   status        String    @default("scheduled") // scheduled, in_progress, completed, canceled
+  priority      String?   @default("medium") // low, medium, high
   progress      Int       @default(0) // 0-100 percentage
   scheduledDate DateTime? @map("scheduled_date") @db.Date
   startDate     DateTime? @map("start_date") @db.Date
@@ -208,11 +210,27 @@ model Job {
   notes     JobNote[]
   feedItems JobFeedItem[]
   todos     JobTodo[]
+  participants JobParticipant[]
 
   @@index([customerId])
   @@index([leadId])
   @@index([assignmentId])
   @@map("jobs")
+}
+
+model JobParticipant {
+  id        BigInt   @id @default(autoincrement()) @db.BigInt
+  jobId     BigInt   @map("job_id")
+  userId    BigInt   @map("user_id")
+  createdAt DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+
+  job  Job  @relation(fields: [jobId], references: [id], onDelete: Cascade)
+  user User @relation("JobParticipants", fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([jobId, userId])
+  @@index([jobId])
+  @@index([userId])
+  @@map("job_participants")
 }
 
 model Estimate {

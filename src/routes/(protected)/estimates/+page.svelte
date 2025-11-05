@@ -703,7 +703,11 @@
 	{/if}
 
 	<!-- Full Estimate Details Modal (readonly) -->
-	<Dialog.Root open={!!expandEstimateDetails} onclose={() => (expandEstimateDetails = null)}>
+	<Dialog.Root open={!!expandEstimateDetails} onOpenChange={(open) => {
+		if (!open) {
+			expandEstimateDetails = null;
+		}
+	}}>
 		{#if expandEstimateDetails}
 			<Dialog.Overlay class="fixed inset-0 z-40 bg-black/40" />
 			<Dialog.Content

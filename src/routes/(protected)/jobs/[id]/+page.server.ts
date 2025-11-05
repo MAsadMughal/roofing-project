@@ -134,6 +134,19 @@ export const load: PageServerLoad = async (event) => {
 						}
 					},
 					orderBy: { createdAt: 'desc' }
+				},
+				participants: {
+					include: {
+						user: {
+							select: {
+								id: true,
+								firstName: true,
+								lastName: true,
+								email: true,
+								role: true
+							}
+						}
+					}
 				}
 			}
 		});
@@ -147,40 +160,63 @@ export const load: PageServerLoad = async (event) => {
 			};
 		}
 
-		// Get participants (sales rep, owner, estimator)
-		const participants = [];
+		// Get fixed participants (sales rep, owner, estimator) from assignment
+		const fixedParticipants: any[] = [];
 		if (job.assignment) {
 			if (job.assignment.assignedTo) {
-				participants.push({
+				fixedParticipants.push({
 					id: String(job.assignment.assignedTo.id),
 					firstName: job.assignment.assignedTo.firstName,
 					lastName: job.assignment.assignedTo.lastName,
 					email: job.assignment.assignedTo.email,
-					role: job.assignment.assignedTo.role
+					role: job.assignment.assignedTo.role,
+					type: 'fixed'
 				});
 			}
 			if (job.assignment.owner) {
-				participants.push({
+				fixedParticipants.push({
 					id: String(job.assignment.owner.id),
 					firstName: job.assignment.owner.firstName,
 					lastName: job.assignment.owner.lastName,
 					email: job.assignment.owner.email,
-					role: job.assignment.owner.role
+					role: job.assignment.owner.role,
+					type: 'fixed'
 				});
 			}
 			if (job.assignment.estimator) {
-				participants.push({
+				fixedParticipants.push({
 					id: String(job.assignment.estimator.id),
 					firstName: job.assignment.estimator.firstName,
 					lastName: job.assignment.estimator.lastName,
 					email: job.assignment.estimator.email,
-					role: job.assignment.estimator.role
+					role: job.assignment.estimator.role,
+					type: 'fixed'
 				});
 			}
 		}
 
+		// Get crew members (participants)
+		const crewMembers = job.participants.map((p) => ({
+			id: String(p.user.id),
+			firstName: p.user.firstName,
+			lastName: p.user.lastName,
+			email: p.user.email,
+			role: p.user.role,
+			type: 'crew',
+			participantId: String(p.id) // For deletion
+		}));
+
+		// Combine fixed participants and crew members, removing duplicates
+		const allParticipants = [...fixedParticipants];
+		const fixedIds = fixedParticipants.map((p) => p.id);
+		crewMembers.forEach((crew) => {
+			if (!fixedIds.includes(crew.id)) {
+				allParticipants.push(crew);
+			}
+		});
+
 		// Remove duplicates
-		const uniqueParticipants = participants.filter(
+		const uniqueParticipants = allParticipants.filter(
 			(p, index, self) => index === self.findIndex((t) => t.id === p.id)
 		);
 
@@ -194,6 +230,7 @@ export const load: PageServerLoad = async (event) => {
 			title: job.title,
 			description: job.description,
 			status: job.status,
+			priority: job.priority || 'medium',
 			progress: job.progress || 0,
 			scheduledDate: job.scheduledDate?.toISOString() || null,
 			startDate: job.startDate?.toISOString() || null,

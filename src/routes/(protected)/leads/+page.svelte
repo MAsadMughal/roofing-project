@@ -29,7 +29,8 @@
 		| 'Social Media'
 		| 'Outreach'
 		| 'Cold Calling'
-		| 'Email Marketing';
+		| 'Email Marketing'
+		| 'Custom';
 
 	type Lead = any;
 	let leads: Lead[] = $state(Array.isArray(data.leads) ? data.leads : []);
@@ -66,7 +67,8 @@
 			'Social Media': true,
 			Outreach: true,
 			'Cold Calling': true,
-			'Email Marketing': true
+			'Email Marketing': true,
+			Custom: true
 		}
 	});
 
@@ -93,6 +95,81 @@
 		if (browser && nextSearch !== currentSearch) {
 			goto(`${path}${nextSearch}`, { replaceState: true, keepFocus: true, noScroll: true });
 			leads = data.leads;
+		}
+	}
+
+	// Add Custom Lead dialog state
+	let showAddLead = $state(false);
+
+	// Minimal required fields according to likely schema (first name, last name, phone, email, address, status (default: new), source: custom, description/title optional)
+	let addLeadForm = $state({
+		first_name: '',
+		last_name: '',
+		phone: '',
+		email: '',
+		address: '',
+		title: '',
+		description: '',
+		work_type: '',
+		status: 'new' as Status
+	});
+	let addLeadError: string | null = $state(null);
+	let addingLead = $state(false);
+
+	async function submitCustomLead(e?: Event) {
+		console.log('hello')
+		if (e) e.preventDefault();
+		addLeadError = null;
+		addingLead = true;
+		const payload: Record<string, string> = {
+			first_name: addLeadForm.first_name,
+			last_name: addLeadForm.last_name,
+			phone: addLeadForm.phone,
+			email: addLeadForm.email,
+			address: addLeadForm.address,
+			title: addLeadForm.title,
+			description: addLeadForm.description,
+			status: addLeadForm.status,
+			work_type: addLeadForm.work_type,
+			source: 'Custom'
+		};
+		// Minimal validation
+		if (	!payload.first_name.trim() ||	!payload.last_name.trim() ||	!payload.phone.trim() ||	!payload.email.trim() ||	!payload.address.trim()) {
+			addLeadError = 'Please fill in all required fields.';
+			addingLead = false;
+			return;
+		}
+		try {
+			const res = await fetch('/api/leads', {
+				method: 'POST',
+				headers: { 'content-type': 'application/json' },
+				body: JSON.stringify(payload)
+			});
+			const out = await res.json().catch(() => ({}));
+			if (!res.ok) {
+				addLeadError = out?.error || 'Failed to add lead.';
+				addingLead = false;
+				return;
+			}
+			if (out?.lead) {
+				leads = [out.lead, ...leads];
+				addLeadForm = {
+					first_name: '',
+					last_name: '',
+					phone: '',
+					email: '',
+					address: '',
+					title: '',
+					description: '',
+					work_type: '',
+					status: 'new'
+				};
+				showAddLead = false;
+			}
+		} catch (err) {
+			addLeadError = 'Network or server error';
+		} finally {
+			addingLead = false;
 		}
 	}
 
@@ -354,6 +431,170 @@
 						<Button onclick={applyFilters}>Apply Filters</Button>
 					</Dialog.Close>
 				</Dialog.Footer>
+			</Dialog.Content>
+		</Dialog.Root>
+
+		<!-- Enhanced New Custom Lead Modal/Dialog UX/UI for true production community use -->
+
+		<Dialog.Root bind:open={showAddLead}>
+			<Dialog.Trigger>
+				<Button variant="default" class="h-10 font-semibold shadow" type="button">
+					<span class="inline-flex items-center gap-2">
+						<svg aria-hidden="true" class="size-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M12 4v16m8-8H4"/></svg>
+						Add Custom Lead
+					</span>
+				</Button>
+			</Dialog.Trigger>
+			<Dialog.Content class="max-w-xl p-0 rounded-lg shadow-xl bg-white dark:bg-zinc-950 border border-zinc-200 dark:border-zinc-800 overflow-y-auto">
+				<Dialog.Header class="mb-0 border-b px-6 py-4 flex items-center">
+					<Dialog.Title class="text-lg font-semibold tracking-tight">
+						Add Custom Lead
+					</Dialog.Title>
+					<p class="ml-auto text-xs text-gray-500">
+						Fields marked <span class="text-red-500">*</span> are required.
+					</p>
+				</Dialog.Header>
+				<form class="space-y-5 px-6 py-6">
+					<div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+						<Label class="flex flex-col gap-1">
+							<span class="font-semibold text-zinc-700 text-[15px] leading-5">
+								First Name <span class="text-red-500">*</span>
+							</span>
+							<Input
+								bind:value={addLeadForm.first_name}
+								required
+								name="first_name"
+								autocomplete="off"
+								class="rounded border px-3 py-2 focus:ring-2 focus:ring-blue-500 transition text-base"
+							/>
+						</Label>
+						<Label class="flex flex-col gap-1">
+							<span class="font-semibold text-zinc-700 text-[15px] leading-5">
+								Last Name <span class="text-red-500">*</span>
+							</span>
+							<Input
+								bind:value={addLeadForm.last_name}
+								required
+								name="last_name"
+								autocomplete="off"
+								class="rounded border px-3 py-2 focus:ring-2 focus:ring-blue-500 transition text-base"
+							/>
+						</Label>
+					</div>
+					<div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+						<Label class="flex flex-col gap-1">
+							<span class="font-semibold text-zinc-700 text-[15px] leading-5">
+								Email <span class="text-red-500">*</span>
+							</span>
+							<Input
+								type="email"
+								bind:value={addLeadForm.email}
+								required
+								name="email"
+								autocomplete="off"
+								class="rounded border px-3 py-2 focus:ring-2 focus:ring-blue-500 transition text-base"
+							/>
+						</Label>
+						<Label class="flex flex-col gap-1">
+							<span class="font-semibold text-zinc-700 text-[15px] leading-5">
+								Phone <span class="text-red-500">*</span>
+							</span>
+							<Input
+								bind:value={addLeadForm.phone}
+								required
+								name="phone"
+								autocomplete="off"
+								class="rounded border px-3 py-2 focus:ring-2 focus:ring-blue-500 transition text-base"
+							/>
+						</Label>
+					</div>
+					<Label class="flex flex-col gap-1">
+						<span class="font-semibold text-zinc-700 text-[15px] leading-5">
+							Address <span class="text-red-500">*</span>
+						</span>
+						<Input
+							bind:value={addLeadForm.address}
+							required
+							name="address"
+							autocomplete="off"
+							class="rounded border px-3 py-2 focus:ring-2 focus:ring-blue-500 transition text-base"
+						/>
+					</Label>
+					<div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+						<Label class="flex flex-col gap-1">
+							<span class="font-semibold text-zinc-700 text-[15px] leading-5">Title</span>
+							<Input
+								bind:value={addLeadForm.title}
+								name="title"
+								autocomplete="off"
+								class="rounded border px-3 py-2 focus:ring-2 focus:ring-blue-500 text-base"
+							/>
+						</Label>
+						<Label class="flex flex-col gap-1">
+							<span class="font-semibold text-zinc-700 text-[15px] leading-5">Work Type</span>
+							<Select.Root value={addLeadForm.work_type} on:change={e => addLeadForm.work_type = e.detail}>
+								<Select.Trigger class="rounded border px-3 py-2 w-full text-left bg-white dark:bg-zinc-900 text-base">
+									{addLeadForm.work_type ? addLeadForm.work_type : 'Select Work Type'}
+								</Select.Trigger>
+								<Select.Content>
+									<Select.Item value="Repair">Repair</Select.Item>
+									<Select.Item value="Replace">Replace</Select.Item>
+									<Select.Item value="Installation">Installation</Select.Item>
+									<Select.Item value="Re-Roof">Re-Roof</Select.Item>
+								</Select.Content>
+							</Select.Root>
+						</Label>
+					</div>
+					<Label class="flex flex-col gap-1">
+						<span class="font-semibold text-zinc-700 text-[15px] leading-5">Description</span>
+						<Input
+							bind:value={addLeadForm.description}
+							name="description"
+							autocomplete="off"
+							class="rounded border px-3 py-2 focus:ring-2 focus:ring-blue-500 text-base"
+						/>
+					</Label>
+					<div class="flex flex-col gap-1">
+						<span class="font-semibold text-zinc-700 text-[15px] leading-5">Status</span>
+						<Select.Root value={addLeadForm.status} on:change={e => addLeadForm.status = e.detail}>
+							<Select.Trigger class="rounded border px-3 py-2 w-full text-left bg-white dark:bg-zinc-900 capitalize transition text-base">
+								{addLeadForm.status || "Select Status"}
+							</Select.Trigger>
+							<Select.Content>
+								<Select.Item value="new">New</Select.Item>
+								<Select.Item value="contacted">Contacted</Select.Item>
+								<Select.Item value="qualified">Qualified</Select.Item>
+								<Select.Item value="lost">Lost</Select.Item>
+								<Select.Item value="converted">Converted</Select.Item>
+							</Select.Content>
+						</Select.Root>
+					</div>
+					{#if addLeadError}
+						<div class="text-sm text-red-700 rounded bg-red-50 px-3 py-2 border border-red-200">
+							{addLeadError}
+						</div>
+					{/if}
+					<Dialog.Footer class="flex flex-col-reverse sm:flex-row gap-2 justify-between pt-4 border-t mt-2">
+						<Dialog.Close>
+							<Button variant="outline" type="button" class="w-full sm:w-auto">Cancel</Button>
+						</Dialog.Close>
+						<Button
+							type="button"
+							variant="default"
+							class="w-full sm:w-auto flex gap-2 items-center justify-center"
+							disabled={addingLead}
+							on:click={() => submitCustomLead()}
+						>
+							{#if addingLead}
+								<svg class="animate-spin size-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10" stroke-opacity=".1"/><path d="M4 12a8 8 0 017-7.94" /></svg>
+								Adding...
+							{:else}
+								<svg class="size-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M12 4v16m8-8H4"/></svg>
+								Add Lead
+							{/if}
+						</Button>
+					</Dialog.Footer>
+				</form>
 			</Dialog.Content>
 		</Dialog.Root>
 
