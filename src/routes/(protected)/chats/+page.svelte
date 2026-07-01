@@ -2,6 +2,7 @@
 	import Button from '$lib/components/ui/button/button.svelte';
 	import Input from '$lib/components/ui/input/input.svelte';
 	import * as Dialog from '$lib/components/ui/dialog';
+	import AvatarRing from '$lib/components/AvatarRing.svelte';
 	import { page } from '$app/stores';
 	import { browser } from '$app/environment';
 	import Plus from '@lucide/svelte/icons/plus';
@@ -11,8 +12,9 @@
 	import MailIcon from '@lucide/svelte/icons/mail';
 	import CheckIcon from '@lucide/svelte/icons/check';
 	import Link from '@lucide/svelte/icons/external-link';
+	import MessageSquare from '@lucide/svelte/icons/message-square';
 
-	const { data } = $props<{ chats: any[]; members: any[] }>();
+	const { data } = $props<{ chats: any[]; members: any[]; user: any }>();
 
 	let chats = $state<Array<any>>(data.chats ?? []);
 	let members = $state<Array<any>>(data.members ?? []);
@@ -125,379 +127,338 @@
 		}
 	}
 
-	// For participant modal navigation
-	function goToProfile(userId: number) {
-		window.location.href = `/user/profile/${userId}`;
+	function getChatInitials(participants: any[]): string {
+		return participants
+			.filter((p: any) => p.id !== Number(user.id))
+			.map((p: any) => p.name)
+			.join(', ');
 	}
 </script>
 
 <svelte:head>
-	<title>Chats</title>
+	<title>Chats | ROOFPILOT CRM</title>
 </svelte:head>
 
-<div class="flex h-[calc(100vh-130px)] gap-6 md:gap-8">
-	<!-- Sidebar: Chats -->
-	<aside
-		class="flex h-full w-[330px] min-w-[265px] shrink-0 flex-col rounded-2xl border bg-white shadow-lg dark:bg-slate-900"
-	>
-		<div class="flex items-center justify-between border-b px-5 py-4">
-			<div class="text-lg font-bold tracking-tight text-primary flex items-center gap-1">
-				<UsersIcon class="size-5 mr-2" />
-				Chats
+<div class="flex h-[calc(100vh-56px)] overflow-hidden border-t border-border">
+	<!-- Sidebar: Chat List Panel -->
+	<aside class="flex h-full w-80 shrink-0 flex-col border-r border-border bg-card md:w-96">
+		<div class="flex items-center justify-between border-b border-border px-5 py-4">
+			<div class="flex items-center gap-2 text-base font-bold tracking-tight text-foreground">
+				<UsersIcon class="size-4.5 text-primary" />
+				Conversations
 			</div>
 			<Button
 				size="icon"
 				variant="ghost"
 				aria-label="Start new chat"
-				class="rounded-full"
+				class="size-8 rounded-lg"
 				onclick={() => (showNew = true)}
 			>
-				<Plus class="size-5" />
+				<Plus class="size-4.5" />
 			</Button>
 		</div>
-		<div class="border-b px-4 py-3">
-			<Input
-				class="w-full"
-				placeholder="Search chats…"
-				bind:value={sidebarSearch}
-				autocomplete="off"
-				inputmode="search"
-			/>
+
+		<div class="border-b border-border bg-slate-50/50 px-4 py-3 dark:bg-slate-900/10">
+			<div class="relative w-full">
+				<Input
+					class="h-9 w-full pr-8 pl-3 text-sm"
+					placeholder="Search conversations..."
+					bind:value={sidebarSearch}
+					autocomplete="off"
+				/>
+			</div>
 		</div>
-		<div class="custom-scrollbar flex-1 overflow-y-auto bg-background/50 p-0">
+
+		<!-- List scrollbody -->
+		<div class="custom-scrollbar flex-1 space-y-1 overflow-y-auto p-2">
 			{#if chats.length === 0}
-				<div class="text-muted-foreground p-5 text-center text-sm">No chats yet</div>
+				<div class="text-muted-foreground p-8 text-center text-sm">No chats found.</div>
 			{:else}
-				<ul class="divide-y divide-border">
-					{#each chats.filter((c) => !sidebarSearch.trim() || c.participants.some((p: any) => p.name
-									.toLowerCase()
-									.includes(sidebarSearch.trim().toLowerCase()))) as c (c.id)}
-						<li>
-							<button
-								class={`flex w-full items-center gap-3 rounded-xl px-5 py-4
-                                transition-colors focus:outline-none focus-visible:ring-2
-                                ${
-																	selectedChatId === c.id
-																		? 'bg-accent/70 font-bold shadow'
-																		: 'hover:bg-secondary/30'
-																}`}
-								aria-selected={selectedChatId === c.id}
-								onclick={async () => {
-									selectedChatId = c.id;
-									await loadMessages(c.id);
-									await fetch(`/api/chats/${c.id}/read`, { method: 'POST' });
-									const refreshed = await (await fetch('/api/chats')).json().catch(() => []);
-									chats = refreshed;
-								}}
-							>
-								<div
-									class="flex h-12 w-12 shrink-0 items-center justify-center rounded-full bg-gradient-to-br from-indigo-400/10 to-violet-300/10 text-lg font-semibold text-indigo-600"
-								>
-									<span>
-										{c.participants
-											.filter((p: any) => p.id !== Number(user.id))
-											.map((p: any) =>
-												p.name
-													.split(' ')
-													.map((n: string) => n[0])
-													.join('')
-											)
-											.join(', ')
-											.slice(0, 2)
-											.toUpperCase()}
+				{#each chats.filter((c) => !sidebarSearch.trim() || c.participants.some((p: any) => p.name
+								.toLowerCase()
+								.includes(sidebarSearch.trim().toLowerCase()))) as c (c.id)}
+					{@const isSelected = selectedChatId === c.id}
+					{@const otherParticipants = c.participants.filter((p: any) => p.id !== Number(user.id))}
+					{@const isOnline = otherParticipants.some((p: any) => p.online)}
+
+					<button
+						class="flex w-full items-start gap-3 rounded-lg border border-transparent p-3 text-left transition-all {isSelected
+							? 'border-border/40 bg-slate-100/70 shadow-xs dark:bg-slate-800'
+							: 'hover:bg-slate-50 dark:hover:bg-slate-800/50'}"
+						onclick={async () => {
+							selectedChatId = c.id;
+							await loadMessages(c.id);
+							await fetch(`/api/chats/${c.id}/read`, { method: 'POST' });
+							const refreshed = await (await fetch('/api/chats')).json().catch(() => []);
+							chats = refreshed;
+						}}
+					>
+						<AvatarRing
+							name={otherParticipants.map((p: any) => p.name).join(', ')}
+							online={isOnline}
+							size="sm"
+							class="mt-0.5"
+						/>
+
+						<div class="min-w-0 flex-1">
+							<div class="flex items-center justify-between gap-2">
+								<span class="truncate text-sm font-semibold text-foreground">
+									{otherParticipants.map((p: any) => p.name).join(', ')}
+								</span>
+								{#if c.last_message}
+									<span class="text-muted-foreground shrink-0 text-[10px] font-medium">
+										{formatLastMessageTime(c.last_message.at)}
 									</span>
-								</div>
-								<div class="flex min-w-0 flex-grow flex-col justify-center">
-									<div class="flex min-w-0 items-center justify-between">
-										<span class="truncate text-base font-semibold flex items-center">
-											<UserIcon class="size-4 mr-1 text-indigo-500 shrink-0" />
-											<span class="truncate">
-											{c.participants
-												.filter((p: any) => {
-													return p.id !== Number(user.id);
-												})
-												.map((p: any) => p.name)
-												.join(', ')}
-											</span>
-										</span>
-										{#if c.last_message}
-											<span class="text-muted-foreground ml-3 flex-shrink-0 text-xs font-medium">
-												{formatLastMessageTime(c.last_message.at)}
-											</span>
-										{/if}
-									</div>
-									<div class="mt-1 flex min-w-0 items-center gap-2">
-										{#if c.last_message}
-											<span class="text-muted-foreground truncate text-[13px]">
-												<span class="font-medium">{c.last_message.from.name}:</span>
-												{c.last_message.text}
-											</span>
-										{:else}
-											<span class="text-muted-foreground text-xs italic">No messages yet</span>
-										{/if}
-									</div>
-								</div>
-								<div class="ml-2 flex items-center gap-2">
-									{#if c.participants.filter((p: any) => p.id !== Number(user.id)).some((p: any) => p.online)}
-										<span class="inline-block h-2.5 w-2.5 rounded-full bg-green-500" title="Online"
-										></span>
-									{/if}
-									{#if c.unread > 0}
-										<span
-											class="inline-flex min-w-6 justify-center rounded-full bg-primary/80 px-1.5 py-0.5 text-xs font-bold text-white"
-											>{c.unread}</span
-										>
-									{/if}
-								</div>
-							</button>
-						</li>
-					{/each}
-				</ul>
+								{/if}
+							</div>
+
+							<div class="mt-1 flex items-center justify-between gap-2">
+								{#if c.last_message}
+									<p class="text-muted-foreground max-w-[180px] truncate text-xs md:max-w-[240px]">
+										<span class="font-medium">{c.last_message.from.name}:</span>
+										{c.last_message.text}
+									</p>
+								{:else}
+									<p class="text-muted-foreground/60 text-xs italic">No messages yet</p>
+								{/if}
+
+								{#if c.unread > 0}
+									<span
+										class="flex size-4.5 shrink-0 items-center justify-center rounded-full bg-primary text-[9px] font-bold text-white"
+									>
+										{c.unread}
+									</span>
+								{/if}
+							</div>
+						</div>
+					</button>
+				{/each}
 			{/if}
 		</div>
 	</aside>
 
-	<!-- Messages Pane -->
-	<section
-		class="flex min-w-0 grow flex-col rounded-2xl border bg-white shadow-lg dark:bg-slate-900"
-	>
-		<div
-			class="flex items-center rounded-t-2xl border-b bg-gradient-to-r from-indigo-50/80 to-violet-50/70 px-8 py-4 dark:from-indigo-950/50 dark:to-violet-950/40"
-		>
-			<!-- Participant names with modal trigger and lucide icon -->
-			<div class="flex-1 flex items-center gap-2 min-w-0">
-				<UserIcon class="size-5 text-indigo-700 shrink-0" />
-				<span class="truncate text-lg font-semibold text-primary max-w-[60vw]">
-				{#if selectedChatId}
-					{chats
-						.find((c) => c.id === selectedChatId)
-						?.participants
-						.filter((i: any) => i.id !== Number(user.id))
-						.map((p: any) => p.name)
-						.join(', ') || 'Select a chat'}
-				{:else}
-					Select a chat
-				{/if}
-				</span>
-				<!-- icon btn to show modal -->
-				{#if selectedChatId}
+	<!-- Messages Panel Window -->
+	<section class="flex flex-1 flex-col bg-slate-50/20 dark:bg-slate-900/10">
+		{#if selectedChatId}
+			{@const currentChat = chats.find((c) => c.id === selectedChatId)}
+			{@const otherParticipants =
+				currentChat?.participants.filter((i: any) => i.id !== Number(user.id)) || []}
+			{@const chatTitle = otherParticipants.map((p: any) => p.name).join(', ')}
+
+			<!-- Chat Area Header -->
+			<div
+				class="flex h-14 shrink-0 items-center justify-between border-b border-border bg-card px-6"
+			>
+				<div class="flex min-w-0 items-center gap-3">
+					<UserIcon class="size-4.5 shrink-0 text-primary" />
+					<span class="max-w-[200px] truncate text-sm font-bold text-foreground md:max-w-md">
+						{chatTitle}
+					</span>
+
 					<Button
 						type="button"
 						size="icon"
 						variant="ghost"
-						aria-label="Show participants"
+						onclick={() => (showParticipantsModal = true)}
+						class="size-8 rounded-lg border border-border"
 						title="Show participant details"
-						onclick={() => showParticipantsModal = true}
-						class="ml-2 rounded-full border border-slate-200 hover:bg-slate-100 dark:border-slate-700 dark:hover:bg-slate-800"
 					>
-						<UsersIcon class="size-5" />
+						<UsersIcon class="size-4" />
 					</Button>
+				</div>
+			</div>
+
+			<!-- Message body grid -->
+			<div class="custom-scrollbar flex-1 space-y-4 overflow-y-auto p-6">
+				{#if loadingMessages}
+					<div class="text-muted-foreground flex h-full items-center justify-center text-sm">
+						Loading conversation history...
+					</div>
+				{:else}
+					{#if messages.length === 0}
+						<div
+							class="text-muted-foreground flex h-full flex-col items-center justify-center p-8 text-center text-sm"
+						>
+							<span class="mb-2 text-2xl">👋</span>
+							<p class="font-semibold text-foreground">No messages yet</p>
+							<p class="mt-1 max-w-[200px] text-xs">
+								Be the first to say hello to this team segment.
+							</p>
+						</div>
+					{/if}
+
+					{#each messages as m}
+						{@const isMe = m.from?.me}
+
+						<div
+							class="flex max-w-[70%] flex-col gap-1.5 {isMe
+								? 'ml-auto items-end'
+								: 'mr-auto items-start'}"
+						>
+							<!-- Sender header details -->
+							<span class="text-muted-foreground px-1 text-[10px] font-semibold">
+								{m.from.name} • {formatLastMessageTime(m.at)}
+							</span>
+
+							<!-- Chat message text content -->
+							<div
+								class="rounded-2xl border px-4 py-2.5 text-sm leading-relaxed break-words whitespace-pre-wrap shadow-xs {isMe
+									? 'rounded-tr-xs border-primary/20 bg-primary text-primary-foreground'
+									: 'rounded-tl-xs border-border bg-card text-foreground'}"
+							>
+								{m.text}
+							</div>
+						</div>
+					{/each}
 				{/if}
 			</div>
-		</div>
-		<div
-			class="custom-scrollbar flex min-h-0 grow flex-col gap-2 overflow-y-auto bg-background/70 p-8"
-		>
-			{#if !selectedChatId}
-				<div class="text-muted-foreground mt-16 flex flex-col items-center text-center text-base">
-					<svg width="48" height="48" fill="none" class="mb-4 opacity-25" viewBox="0 0 24 24"
-						><rect
-							x="4"
-							y="4"
-							width="16"
-							height="14"
-							rx="2"
-							fill="currentColor"
-							class="text-indigo-300"
-						/><rect
-							x="8"
-							y="18"
-							width="8"
-							height="2"
-							rx="1"
-							fill="currentColor"
-							class="text-indigo-400"
-						/></svg
-					>
-					<div>Pick a chat to start messaging.</div>
-				</div>
-			{:else if loadingMessages}
-				<div class="text-muted-foreground mt-16 text-center text-base">Loading…</div>
-			{:else}
-				{#if messages.length === 0}
-					<div class="text-muted-foreground mt-16 text-center text-base">
-						No messages yet – say hello 👋
-					</div>
-				{/if}
-				{#each messages as m}
-					<div
-						class="mb-0.5 max-w-[66%] min-w-[100px] rounded-xl border border-border bg-background px-4 py-2.5 text-[15px] shadow-sm
-                        {m.from?.me
-							? 'ml-auto border-primary/40 bg-gradient-to-br from-primary/20 to-indigo-100 dark:from-primary/30 dark:to-gray-900'
-							: 'bg-white dark:bg-slate-800'}
-                    "
-					>
-						<div class="mb-1 flex items-center gap-1 text-xs font-bold text-primary/90">
-							{m.from.name}
-							<span class="text-muted-foreground mx-1 font-normal">•</span>
-							<span class="text-muted-foreground font-normal">{formatLastMessageTime(m.at)}</span>
-						</div>
-						<div class="leading-relaxed break-words whitespace-pre-wrap">{m.text}</div>
-					</div>
-				{/each}
-			{/if}
-		</div>
-		<form
-			class="flex gap-2 rounded-b-2xl border-t bg-background/80 px-8 py-5"
-			autocomplete="off"
-			onsubmit={(e) => {
-				e.preventDefault();
-				sendMessage();
-			}}
-		>
-			<Input
-				class="grow rounded-full px-5 py-3 text-base shadow-inner"
-				placeholder="Type a message…"
-				bind:value={compose}
-				autocomplete="off"
-			/>
-			<Button
-				type="submit"
-				size="lg"
-				disabled={!compose.trim()}
-				class="gap-2 rounded-full px-6 py-3 shadow-lg transition-all duration-75 active:scale-95"
-			>
-				<Send class="size-5" />
-				<span class="hidden sm:inline">Send</span>
-			</Button>
-		</form>
 
-		<!-- Participants Modal -->
-		<Dialog.Root bind:open={showParticipantsModal}>
-			<Dialog.Content class="max-w-lg">
-				<Dialog.Header>
-					<Dialog.Title>
-						<UsersIcon class="size-6 mr-1.5 align-middle inline" /> Participants
-					</Dialog.Title>
-					<Dialog.Description>Click a participant to view their profile.</Dialog.Description>
-				</Dialog.Header>
-				{#if selectedChatId}
-					<div class="max-h-[65vh] overflow-y-auto pr-2">
-						<ul class="divide-y">
-							{#each chats.find(c => c.id === selectedChatId)?.participants || [] as p (p.id)}
-                                <li
-                                    class="flex items-center py-4 px-1 gap-4 hover:bg-accent/60 transition rounded-lg cursor-pointer group"
-                                    title="Open profile"
-                                >
-									<div class="flex-shrink-0">
-										<UserIcon class="size-7 text-violet-700 bg-violet-50 rounded-full p-1 border border-violet-200" />
-									</div>
-									<div class="flex-1 min-w-0">
-										<div class="font-semibold text-base truncate flex items-center gap-1">
-											{p.name}
-											{#if p.id === user.id}
-												<span class="text-xs bg-emerald-100 text-emerald-700 px-1.5 rounded ml-2 flex items-center gap-0.5">
-													me
-													<CheckIcon class="size-3 ml-1" />
-												</span>
-											{/if}
-										</div>
-										<div class="text-slate-500 text-sm flex items-center gap-1 truncate">
-											<MailIcon class="size-4" /> {p.email}
-										</div>
-										{#if p.online}
-											<span class="inline-flex items-center text-xs mt-0.5 text-green-600 gap-1">
-												<span class="inline-block h-2 w-2 rounded-full bg-green-500"></span> Online
-											</span>
-										{:else}
-											<span class="inline-flex items-center text-xs mt-0.5 text-slate-400 gap-1">
-												<span class="inline-block h-2 w-2 rounded-full bg-gray-300"></span> Offline
-											</span>
-										{/if}
-									</div>
-									<a
-										href={`/user/profile/${p.id}`}
-										target="_blank"
-										rel="noopener noreferrer"
-										class="ml-2 rounded-full border border-slate-200 bg-white hover:bg-indigo-50 dark:border-slate-700 transition group-hover:bg-indigo-100 flex items-center justify-center"
-										title="Go to profile"
-										tabindex="-1"
-									>
-										<Link class="size-4" />
-									</a>
-								</li>
-							{/each}
-						</ul>
-					</div>
-				{/if}
-				<Dialog.Footer class="mt-4 flex justify-end">
-					<Dialog.Close>
-						<Button variant="outline">Close</Button>
-					</Dialog.Close>
-				</Dialog.Footer>
-			</Dialog.Content>
-		</Dialog.Root>
+			<!-- Message Composer input form bar -->
+			<form
+				class="flex items-center gap-2.5 border-t border-border bg-card p-4"
+				autocomplete="off"
+				onsubmit={(e) => {
+					e.preventDefault();
+					sendMessage();
+				}}
+			>
+				<Input
+					class="h-10 flex-1 rounded-lg bg-slate-50/50 px-4 text-sm"
+					placeholder="Type your message here..."
+					bind:value={compose}
+					autocomplete="off"
+				/>
+				<Button
+					type="submit"
+					size="sm"
+					disabled={!compose.trim()}
+					class="h-10 gap-1.5 rounded-lg px-4"
+				>
+					<Send class="size-4" />
+					<span>Send</span>
+				</Button>
+			</form>
+		{:else}
+			<div class="flex flex-1 flex-col items-center justify-center p-8 text-center">
+				<div
+					class="text-muted-foreground mb-4 flex size-14 items-center justify-center rounded-2xl border border-border bg-card shadow-xs"
+				>
+					<MessageSquare class="text-muted-foreground size-6" />
+				</div>
+				<h3 class="text-base font-bold text-foreground">Select a chat</h3>
+				<p class="text-muted-foreground mt-1.5 max-w-[240px] text-xs">
+					Pick an existing conversation from the left sidebar panel or start a new chat with team
+					members.
+				</p>
+				<Button size="sm" onclick={() => (showNew = true)} class="mt-4 gap-1.5">
+					<Plus class="size-4" /> Start New Chat
+				</Button>
+			</div>
+		{/if}
 	</section>
 </div>
 
-<!-- New Chat Modal -->
-<Dialog.Root bind:open={showNew}>
-	<Dialog.Content class="max-w-md">
+<!-- Participant Details Modal -->
+<Dialog.Root bind:open={showParticipantsModal}>
+	<Dialog.Content class="max-w-md rounded-2xl border border-border bg-card">
 		<Dialog.Header>
-			<Dialog.Title>
-				<Plus class="size-5 mr-1.5 align-middle inline" /> Start a new chat
+			<Dialog.Title class="flex items-center gap-2">
+				<UsersIcon class="size-5 text-primary" />
+				<span>Chat Participants</span>
 			</Dialog.Title>
-			<Dialog.Description>
-				Select people from your organization
+			<Dialog.Description class="text-xs">
+				List of team members participating in this conversation thread.
 			</Dialog.Description>
 		</Dialog.Header>
-		<div class="max-h-[60vh] space-y-2 overflow-y-auto py-2">
+
+		{#if selectedChatId}
+			<div class="custom-scrollbar mt-4 max-h-[50vh] space-y-2 overflow-y-auto pr-1">
+				{#each chats.find((c) => c.id === selectedChatId)?.participants || [] as p (p.id)}
+					<div
+						class="flex items-center justify-between rounded-xl border border-border/50 p-2.5 transition-colors hover:bg-slate-50/50 dark:hover:bg-slate-800/40"
+					>
+						<div class="flex min-w-0 items-center gap-3">
+							<AvatarRing name={p.name} online={p.online} size="sm" />
+							<div class="min-w-0">
+								<div class="flex items-center gap-1.5 text-sm font-semibold text-foreground">
+									<span class="truncate">{p.name}</span>
+									{#if p.id === user.id}
+										<span
+											class="inline-flex items-center gap-0.5 rounded border border-emerald-200 bg-emerald-50 px-1.5 py-0.5 text-[9px] font-bold text-emerald-700"
+										>
+											me <CheckIcon class="size-2.5" />
+										</span>
+									{/if}
+								</div>
+								<div class="text-muted-foreground mt-0.5 flex items-center gap-1 truncate text-xs">
+									<MailIcon class="size-3 shrink-0" />
+									<span class="truncate">{p.email}</span>
+								</div>
+							</div>
+						</div>
+						<a
+							href={`/user/profile/${p.id}`}
+							class="text-muted-foreground flex size-7 shrink-0 items-center justify-center rounded-lg border border-border bg-card transition-colors hover:bg-slate-50"
+							title="Open user profile card"
+						>
+							<Link class="size-3.5" />
+						</a>
+					</div>
+				{/each}
+			</div>
+		{/if}
+
+		<Dialog.Footer class="mt-4">
+			<Dialog.Close>
+				<Button variant="outline" size="sm">Close</Button>
+			</Dialog.Close>
+		</Dialog.Footer>
+	</Dialog.Content>
+</Dialog.Root>
+
+<!-- New Chat Modal -->
+<Dialog.Root bind:open={showNew}>
+	<Dialog.Content class="max-w-md rounded-2xl border border-border bg-card">
+		<Dialog.Header>
+			<Dialog.Title class="flex items-center gap-2">
+				<Plus class="size-5 text-primary" />
+				<span>Start a new chat</span>
+			</Dialog.Title>
+			<Dialog.Description class="text-xs">
+				Select colleagues from your organization list to begin.
+			</Dialog.Description>
+		</Dialog.Header>
+
+		<div class="custom-scrollbar mt-4 max-h-[50vh] space-y-2 overflow-y-auto py-2 pr-1">
 			{#each members as m}
 				<label
-					class="flex cursor-pointer items-center justify-between rounded-xl border bg-background/40 p-3 text-base transition hover:border-primary hover:shadow-md gap-2"
+					class="flex cursor-pointer items-center justify-between gap-3 rounded-xl border border-border bg-card p-3 transition-all hover:border-slate-300 hover:shadow-xs dark:hover:border-slate-700"
 				>
-					<div class="flex items-center gap-2">
-						<UserIcon class="size-5 text-indigo-500" />
+					<div class="flex items-center gap-3">
+						<AvatarRing name={m.name} size="sm" />
 						<div>
-							<div class="font-medium">{m.name}</div>
-							<div class="text-muted-foreground text-xs">{m.email}</div>
+							<p class="text-sm font-semibold text-foreground">{m.name}</p>
+							<p class="text-muted-foreground text-xs">{m.email}</p>
 						</div>
 					</div>
 					<input
 						type="checkbox"
 						checked={selectedMembers.has(m.id)}
 						onchange={() => toggleMember(m.id)}
-						class="size-5 rounded accent-indigo-600"
+						class="size-4.5 shrink-0 rounded border-border accent-primary"
 						aria-label="Select member"
 					/>
 				</label>
 			{/each}
 		</div>
-		<Dialog.Footer class="mt-3 flex justify-end gap-2">
+
+		<Dialog.Footer class="mt-4 gap-2">
 			<Dialog.Close>
-				<Button variant="outline">Cancel</Button>
+				<Button variant="outline" size="sm">Cancel</Button>
 			</Dialog.Close>
-			<Button onclick={createChat} disabled={selectedMembers.size === 0}>Create</Button>
+			<Button size="sm" onclick={createChat} disabled={selectedMembers.size === 0}
+				>Create Thread</Button
+			>
 		</Dialog.Footer>
 	</Dialog.Content>
 </Dialog.Root>
-
-<style>
-	.custom-scrollbar::-webkit-scrollbar {
-		width: 9px;
-	}
-	.custom-scrollbar::-webkit-scrollbar-thumb {
-		background: linear-gradient(120deg, #a5b4fc55, #dddde090);
-		border-radius: 6px;
-	}
-	.custom-scrollbar:hover::-webkit-scrollbar-thumb {
-		background: linear-gradient(120deg, #818cf888, #dddde0b0);
-	}
-	.custom-scrollbar::-webkit-scrollbar-track {
-		background: transparent;
-	}
-	.custom-scrollbar {
-		scrollbar-color: #a5b4fc44 transparent;
-		scrollbar-width: thin;
-	}
-</style>

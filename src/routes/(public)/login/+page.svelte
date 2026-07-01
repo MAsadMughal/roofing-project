@@ -1,91 +1,252 @@
 <script lang="ts">
-  import Button from '$lib/components/ui/button/button.svelte';
-  import Input from '$lib/components/ui/input/input.svelte';
-  import Label from '$lib/components/ui/label/label.svelte';
-  import Card from '$lib/components/ui/card/card.svelte';
-  import { CardHeader, CardContent, CardFooter } from '$lib/components/ui/card';
-  import { goto } from '$app/navigation';
+	import Button from '$lib/components/ui/button/button.svelte';
+	import Input from '$lib/components/ui/input/input.svelte';
+	import Label from '$lib/components/ui/label/label.svelte';
+	import Card from '$lib/components/ui/card/card.svelte';
+	import { CardHeader, CardContent, CardFooter } from '$lib/components/ui/card';
+	import { goto } from '$app/navigation';
 
-  let email = '';
-  let password = '';
-  let error: string | null = null;
-  let loading = false;
+	let email = $state('');
+	let password = $state('');
+	let error = $state<string | null>(null);
+	let loading = $state(false);
 
-  async function submit(e: SubmitEvent) {
-    e.preventDefault();
-    error = null;
-    loading = true;
-    try {
-      const res = await fetch('/api/auth/login', {
-        method: 'POST',
-        headers: { 'content-type': 'application/json' },
-        body: JSON.stringify({ email, password })
-      });
-      if (!res.ok) {
-        const data = await res.json().catch(() => ({}));
-        error = data.error || 'Login failed';
-        return;
-      }
-      await goto('/dashboard', { invalidateAll: true });
-    } finally {
-      loading = false;
-    }
-  }
+	async function submit(e: SubmitEvent) {
+		e.preventDefault();
+		error = null;
+		loading = true;
+		try {
+			const res = await fetch('/api/auth/login', {
+				method: 'POST',
+				headers: { 'content-type': 'application/json' },
+				body: JSON.stringify({ email, password })
+			});
+			if (!res.ok) {
+				const data = await res.json().catch(() => ({}));
+				error = data.error || 'Login failed';
+				return;
+			}
+			await goto('/dashboard', { invalidateAll: true });
+		} finally {
+			loading = false;
+		}
+	}
 </script>
 
-<!-- Page -->
-<div class="relative flex min-h-screen flex-col items-center justify-center px-4">
-  <!-- Branding Top -->
-  <div class="absolute top-8 flex items-center gap-2">
-    <img
-      src="https://dcassetcdn.com/design_img/3656568/47349/47349_20884214_3656568_d2aa512e_image.png"
-      alt="Logo"
-      class="h-10 w-auto drop-shadow-sm"
-    />
-    <h1 class="text-xl font-semibold text-slate-800 dark:text-slate-200">RoofLink</h1>
-  </div>
+<svelte:head>
+	<title>Sign In | ROOFPILOT CRM</title>
+</svelte:head>
 
-  <!-- Login Card -->
-  <Card class="w-full hover:shadow-2xl max-w-md rounded-2xl border border-purple-100 bg-white/80 shadow-xl backdrop-blur-md dark:border-purple-900 dark:bg-[#1a1335]/80">
-    <CardHeader class="pb-2 text-center">
-      <h2 class="bg-gradient-to-r from-indigo-600 to-violet-600 bg-clip-text text-3xl font-semibold tracking-tight text-transparent">
-        Welcome Back
-      </h2>
-      <p class="mt-1 text-sm text-slate-500 dark:text-slate-400">Sign in to manage your projects and community</p>
-    </CardHeader>
+<div class="flex min-h-screen">
+	<!-- Left Side: Enterprise Feature Showcase (Desktop only) -->
+	<div
+		class="relative hidden w-1/2 flex-col justify-between overflow-hidden border-r border-slate-800 bg-slate-950 p-12 text-white lg:flex"
+	>
+		<!-- Abstract grid background pattern -->
+		<div
+			class="absolute inset-0 bg-[radial-gradient(ellipse_at_top_right,rgba(99,102,241,0.12),transparent_50%)]"
+		></div>
+		<div
+			class="absolute inset-0 bg-[linear-gradient(to_bottom,rgba(255,255,255,0.015)_1px,transparent_1px),linear-gradient(to_right,rgba(255,255,255,0.015)_1px,transparent_1px)] bg-[size:24px_24px]"
+		></div>
 
-    <CardContent class="pt-6">
-      <form on:submit|preventDefault={submit} class="space-y-5">
-        <div class="space-y-2">
-          <Label for="email" class="font-medium text-slate-700 dark:text-slate-300">Email</Label>
-          <Input id="email" type="email" bind:value={email} required class="w-full" />
-        </div>
-        <div class="space-y-2">
-          <Label for="password" class="font-medium text-slate-700 dark:text-slate-300">Password</Label>
-          <Input id="password" type="password" bind:value={password} required class="w-full" />
-        </div>
+		<!-- Header / Brand Logo -->
+		<div class="relative z-10 flex items-center gap-2.5">
+			<img
+				src="https://i.postimg.cc/BZ2cNHkd/logo.png"
+				alt="Logo"
+				class="h-8 w-auto brightness-200 drop-shadow-md"
+			/>
+			<span class="text-lg font-bold tracking-tight text-white">ROOFPILOT</span>
+			<span
+				class="rounded-full border border-indigo-500/20 bg-indigo-500/10 px-2 py-0.5 text-[10px] font-semibold tracking-wide text-indigo-400 uppercase"
+				>Enterprise</span
+			>
+		</div>
 
-        {#if error}
-          <div class="rounded-md bg-red-100 p-3 dark:bg-red-900/20">
-            <p class="text-sm font-medium text-red-600 dark:text-red-400">{error}</p>
-          </div>
-        {/if}
+		<!-- Center: Feature List / Visual Mockup -->
+		<div class="relative z-10 my-auto max-w-md space-y-8">
+			<div class="space-y-3">
+				<h1 class="text-3xl leading-tight font-extrabold tracking-tight text-white">
+					The Operating System for Roofing Enterprises.
+				</h1>
+				<p class="text-xs leading-relaxed text-slate-400">
+					Unify sales pipelines, crew operations, client proposals, and real-time scheduling under a
+					single, highly performant SaaS application.
+				</p>
+			</div>
 
-        <Button
-          type="submit"
-          class="w-full bg-gradient-to-r from-purple-600 via-indigo-600 to-purple-700 font-medium text-white shadow-md transition-all duration-300 hover:from-purple-700 hover:via-indigo-700 hover:to-purple-800"
-          disabled={loading}
-        >
-          {loading ? 'Signing in...' : 'Sign In'}
-        </Button>
-      </form>
-    </CardContent>
+			<div class="space-y-4">
+				<!-- Feature Item 1 -->
+				<div class="flex gap-3">
+					<div
+						class="flex size-7 shrink-0 items-center justify-center rounded-lg border border-indigo-500/20 bg-indigo-500/10 text-indigo-400"
+					>
+						<svg
+							class="size-4"
+							fill="none"
+							stroke="currentColor"
+							stroke-width="2.5"
+							viewBox="0 0 24 24"
+							><path
+								stroke-linecap="round"
+								stroke-linejoin="round"
+								d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"
+							/></svg
+						>
+					</div>
+					<div>
+						<h4 class="text-xs font-semibold text-white">High-Precision Pipelines</h4>
+						<p class="text-slate-450 mt-0.5 text-[11px]">
+							Streamline intake, assign estimators, and watch lead-to-contract metrics convert.
+						</p>
+					</div>
+				</div>
 
-    <CardFooter class="flex flex-col space-y-3 border-t border-purple-100 p-6 dark:border-purple-900">
-      <p class="text-center text-sm text-slate-500 dark:text-slate-400">
-        No account?
-        <a href="/signup" class="font-medium text-purple-600 hover:underline dark:text-purple-400">Sign up</a>
-      </p>
-    </CardFooter>
-  </Card>
+				<!-- Feature Item 2 -->
+				<div class="flex gap-3">
+					<div
+						class="flex size-7 shrink-0 items-center justify-center rounded-lg border border-indigo-500/20 bg-indigo-500/10 text-indigo-400"
+					>
+						<svg
+							class="size-4"
+							fill="none"
+							stroke="currentColor"
+							stroke-width="2.5"
+							viewBox="0 0 24 24"
+							><path
+								stroke-linecap="round"
+								stroke-linejoin="round"
+								d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"
+							/></svg
+						>
+					</div>
+					<div>
+						<h4 class="text-xs font-semibold text-white">Dynamic Scheduling & Kanban</h4>
+						<p class="text-slate-450 mt-0.5 text-[11px]">
+							Track production workflow milestones, crew details, and scheduling timelines on the
+							fly.
+						</p>
+					</div>
+				</div>
+
+				<!-- Feature Item 3 -->
+				<div class="flex gap-3">
+					<div
+						class="flex size-7 shrink-0 items-center justify-center rounded-lg border border-indigo-500/20 bg-indigo-500/10 text-indigo-400"
+					>
+						<svg
+							class="size-4"
+							fill="none"
+							stroke="currentColor"
+							stroke-width="2.5"
+							viewBox="0 0 24 24"
+							><path
+								stroke-linecap="round"
+								stroke-linejoin="round"
+								d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"
+							/></svg
+						>
+					</div>
+					<div>
+						<h4 class="text-xs font-semibold text-white">Instant Proposals & Invoices</h4>
+						<p class="text-slate-450 mt-0.5 text-[11px]">
+							Generate bids, request approvals, and log contractor payments in single click
+							operations.
+						</p>
+					</div>
+				</div>
+			</div>
+		</div>
+
+		<!-- Footer of Left Showcase -->
+		<div
+			class="relative z-10 flex items-center justify-between border-t border-slate-900 pt-6 text-[11px] text-slate-500"
+		>
+			<span>© 2026 ROOFPILOT Inc. All rights reserved.</span>
+			<span class="cursor-pointer hover:text-slate-400">Security & Compliance</span>
+		</div>
+	</div>
+
+	<!-- Right Side: Auth Form -->
+	<div
+		class="flex w-full flex-col justify-center bg-slate-50/50 px-6 md:px-16 lg:w-1/2 dark:bg-slate-900/10"
+	>
+		<div class="mx-auto w-full max-w-sm space-y-6">
+			<!-- Mobile Brand Logo (hidden on large displays) -->
+			<div class="mb-6 flex items-center justify-center gap-2 lg:hidden">
+				<img
+					src="https://i.postimg.cc/BZ2cNHkd/logo.png"
+					alt="Logo"
+					class="h-8 w-auto drop-shadow-xs"
+				/>
+				<span class="text-lg font-bold tracking-tight text-foreground">ROOFPILOT</span>
+			</div>
+
+			<!-- Sign In Card container -->
+			<Card class="w-full rounded-2xl border border-border bg-card p-2 shadow-lg transition-all">
+				<CardHeader class="mt-3 pb-2 text-center">
+					<h2 class="text-xl font-bold tracking-tight text-foreground">Welcome Back</h2>
+					<p class="text-muted-foreground mt-1 text-xs">
+						Sign in to access your business operations control center.
+					</p>
+				</CardHeader>
+
+				<CardContent class="pt-4">
+					<form onsubmit={submit} class="space-y-4">
+						<div class="space-y-1.5">
+							<Label for="email" class="text-muted-foreground text-xs font-semibold"
+								>Email Address</Label
+							>
+							<Input
+								id="email"
+								type="email"
+								bind:value={email}
+								required
+								class="h-10 w-full text-sm"
+								placeholder="name@company.com"
+							/>
+						</div>
+						<div class="space-y-1.5">
+							<div class="flex items-center justify-between">
+								<Label for="password" class="text-muted-foreground text-xs font-semibold">Password</Label>
+								<a href="/forgot" class="text-xs font-semibold text-primary hover:underline">Forgot password?</a>
+							</div>
+							<Input
+								id="password"
+								type="password"
+								bind:value={password}
+								required
+								class="h-10 w-full text-sm"
+								placeholder="••••••••"
+							/>
+						</div>
+
+						{#if error}
+							<div
+								class="rounded-lg border border-red-500/20 bg-red-500/10 p-3 text-xs font-medium text-red-600"
+							>
+								{error}
+							</div>
+						{/if}
+
+						<Button
+							type="submit"
+							class="mt-2 h-10 w-full font-semibold shadow-xs"
+							disabled={loading}
+						>
+							{loading ? 'Signing in...' : 'Sign In'}
+						</Button>
+					</form>
+				</CardContent>
+
+				<CardFooter class="flex flex-col space-y-3 border-t border-border p-5 text-center">
+					<p class="text-muted-foreground text-xs">
+						Do not have an account?
+						<a href="/signup" class="font-semibold text-primary hover:underline">Sign up</a>
+					</p>
+				</CardFooter>
+			</Card>
+		</div>
+	</div>
 </div>

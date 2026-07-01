@@ -69,7 +69,7 @@
 			<div class="flex items-center gap-6">
 				<img
 					alt="Company Logo"
-					src="https://dcassetcdn.com/design_img/3656568/47349/47349_20884214_3656568_d2aa512e_image.png"
+					src="https://i.postimg.cc/BZ2cNHkd/logo.png"
 					class="h-10 w-auto drop-shadow-sm"
 				/>
 
@@ -86,7 +86,9 @@
 							>
 								{link.label}
 								{#if link.href === '/chats' && $page.data.unreadChatCount > 0}
-									<span class="absolute -right-0.5 -top-0.5 flex h-4 w-4 items-center justify-center rounded-full bg-red-500 text-[10px] font-bold text-white shadow-lg">
+									<span
+										class="absolute -top-0.5 -right-0.5 flex h-4 w-4 items-center justify-center rounded-full bg-red-500 text-[10px] font-bold text-white shadow-lg"
+									>
 										{$page.data.unreadChatCount > 99 ? '99+' : $page.data.unreadChatCount}
 									</span>
 								{/if}
@@ -131,21 +133,21 @@
 							>
 							<DropdownMenu.Group>
 								<DropdownMenu.Item
-									class="flex items-center font-semibold dark:text-white cursor-pointer gap-2 text-slate-700 hover:text-indigo-600"
+									class="flex cursor-pointer items-center gap-2 font-semibold text-slate-700 hover:text-indigo-600 dark:text-white"
 								>
 									<UserRound class="h-4 w-4 text-slate-500 dark:text-white" />
 									<span>View Profile</span>
 								</DropdownMenu.Item>
 								<DropdownMenu.Item
 									onclick={() => goto('/change-password')}
-									class="flex items-center font-semibold dark:text-white cursor-pointer gap-2 text-slate-700 hover:text-indigo-600"
+									class="flex cursor-pointer items-center gap-2 font-semibold text-slate-700 hover:text-indigo-600 dark:text-white"
 								>
 									<Key class="h-4 w-4 text-slate-500 dark:text-white" />
 									<span>Change Password</span>
 								</DropdownMenu.Item>
 								<DropdownMenu.Item
 									onclick={() => logout()}
-									class="flex items-center font-semibold  cursor-pointer gap-2 text-red-600 hover:text-red-700"
+									class="flex cursor-pointer items-center  gap-2 font-semibold text-red-600 hover:text-red-700"
 								>
 									<LogOut class="h-4 w-4 " />
 									<span>Sign Out</span>
@@ -160,14 +162,14 @@
 								>
 								<DropdownMenu.Item
 									onclick={() => goto('/members')}
-									class="flex items-center font-semibold dark:text-white cursor-pointer gap-2 text-slate-700 hover:text-indigo-600"
+									class="flex cursor-pointer items-center gap-2 font-semibold text-slate-700 hover:text-indigo-600 dark:text-white"
 								>
 									<UserPlus class="h-4 w-4 text-slate-500 dark:text-white" />
 									<span>Invite Members</span>
 								</DropdownMenu.Item>
 								<DropdownMenu.Item
 									onclick={() => goto('/leads')}
-									class="flex items-center font-semibold dark:text-white cursor-pointer gap-2 text-slate-700 hover:text-indigo-600"
+									class="flex cursor-pointer items-center gap-2 font-semibold text-slate-700 hover:text-indigo-600 dark:text-white"
 								>
 									<ListOrdered class="h-4 w-4 text-slate-500 dark:text-white" />
 									<span>View Assigned Leads</span>

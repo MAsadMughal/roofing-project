@@ -49,23 +49,33 @@
 <div class="relative flex min-h-screen flex-col items-center justify-center px-4">
 	<div class="absolute top-8 flex items-center gap-2">
 		<img
-			src="https://dcassetcdn.com/design_img/3656568/47349/47349_20884214_3656568_d2aa512e_image.png"
+			src="https://i.postimg.cc/BZ2cNHkd/logo.png"
 			alt="Logo"
-			class="h-10 w-auto drop-shadow-sm"
+			class="h-10 w-auto rounded-lg drop-shadow-sm"
 		/>
-		<h1 class="text-xl font-semibold text-slate-800 dark:text-slate-200">RoofLink</h1>
+		<h1 class="text-xl font-semibold text-slate-800 dark:text-slate-200">ROOFPILOT</h1>
 	</div>
 
-	<Card class="w-full hover:shadow-2xl max-w-md rounded-2xl border border-purple-100 bg-white/80 shadow-xl backdrop-blur-md dark:border-purple-900 dark:bg-[#1a1335]/80">
+	<Card
+		class="w-full max-w-md rounded-2xl border border-purple-100 bg-white/80 shadow-xl backdrop-blur-md hover:shadow-2xl dark:border-purple-900 dark:bg-[#1a1335]/80"
+	>
 		<CardHeader class="pb-2 text-center">
-			<h1 class="bg-gradient-to-r from-indigo-600 to-violet-600 bg-clip-text text-3xl font-semibold tracking-tight text-transparent">Change password</h1>
-			<p class="mt-1 text-sm text-slate-500 dark:text-slate-400">Update your password. You will stay signed in.</p>
+			<h1
+				class="bg-gradient-to-r from-indigo-600 to-violet-600 bg-clip-text text-3xl font-semibold tracking-tight text-transparent"
+			>
+				Change password
+			</h1>
+			<p class="mt-1 text-sm text-slate-500 dark:text-slate-400">
+				Update your password. You will stay signed in.
+			</p>
 		</CardHeader>
 
 		<CardContent class="pt-6">
 			<form onsubmit={submit} class="space-y-5">
 				<div class="space-y-2">
-					<Label for="current" class="font-medium text-slate-700 dark:text-slate-300">Current password</Label>
+					<Label for="current" class="font-medium text-slate-700 dark:text-slate-300"
+						>Current password</Label
+					>
 					<Input
 						id="current"
 						type="password"
@@ -75,11 +85,15 @@
 					/>
 				</div>
 				<div class="space-y-2">
-					<Label for="new" class="font-medium text-slate-700 dark:text-slate-300">New password</Label>
+					<Label for="new" class="font-medium text-slate-700 dark:text-slate-300"
+						>New password</Label
+					>
 					<Input id="new" type="password" bind:value={newPassword} required class="w-full" />
 				</div>
 				<div class="space-y-2">
-					<Label for="confirm" class="font-medium text-slate-700 dark:text-slate-300">Confirm new password</Label>
+					<Label for="confirm" class="font-medium text-slate-700 dark:text-slate-300"
+						>Confirm new password</Label
+					>
 					<Input id="confirm" type="password" bind:value={confirm} required class="w-full" />
 				</div>
 
@@ -91,7 +105,9 @@
 
 				{#if success}
 					<div class="rounded-md bg-emerald-600/10 p-3 dark:bg-emerald-900/10">
-						<p class="text-sm font-medium text-emerald-700 dark:text-emerald-300">Password updated successfully.</p>
+						<p class="text-sm font-medium text-emerald-700 dark:text-emerald-300">
+							Password updated successfully.
+						</p>
 					</div>
 				{/if}
 
@@ -107,9 +123,13 @@
 			</form>
 		</CardContent>
 
-		<CardFooter class="flex flex-col space-y-3 border-t border-purple-100 p-6 dark:border-purple-900">
+		<CardFooter
+			class="flex flex-col space-y-3 border-t border-purple-100 p-6 dark:border-purple-900"
+		>
 			<p class="text-center text-sm text-slate-500 dark:text-slate-400">
-				<a href="/" class="font-medium text-purple-600 hover:underline dark:text-purple-400">Back to dashboard</a>
+				<a href="/" class="font-medium text-purple-600 hover:underline dark:text-purple-400"
+					>Back to dashboard</a
+				>
 			</p>
 		</CardFooter>
 	</Card>

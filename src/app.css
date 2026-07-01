@@ -3,98 +3,140 @@
 
 @custom-variant dark (&:is(.dark *));
 
-/* ===============================
-   🎨 Modern Community SaaS Theme
-   =============================== */
+/* ==========================================================================
+   🎨 PREMIUM SaaS DESIGN SYSTEM (OKLCH - 2026 EDITION)
+   ========================================================================== */
 
 :root {
-	--radius: 0.625rem;
+	/* Font & Layout Metrics */
+	--font-sans: 'Inter', system-ui, -apple-system, sans-serif;
+	--radius: 0.75rem; /* Smoother, slightly larger radius for premium cards/modals */
+	
+	/* Layout Constants */
+	--sidebar-width: 240px;
+	--sidebar-collapsed-width: 68px;
+	--header-height: 56px;
 
-	/* Core Backgrounds */
-	--background: oklch(0.985 0.015 250); /* subtle off-white */
-	--foreground: oklch(0.14 0.03 255); /* soft dark gray text */
+	/* Core Backgrounds & Surfaces (Attio/Linear Style) */
+	--background: oklch(0.99 0.003 250);      /* Minimalist pristine white background */
+	--foreground: oklch(0.18 0.015 255);      /* Deep charcoal body text (less harsh than pure black) */
+	
+	/* Surfaces & Layering */
+	--card: oklch(1.0 0 0);                   /* Pure white for foreground elements */
+	--card-foreground: oklch(0.18 0.015 255);
+	--popover: oklch(1.0 0 0);
+	--popover-foreground: oklch(0.18 0.015 255);
+	
+	/* Muted Surfaces */
+	--muted: oklch(0.965 0.005 250);          /* Soft gray for inactive tabs or code blocks */
+	--muted-foreground: oklch(0.48 0.015 250); /* Secondary/Muted text */
+	
+	/* Structural Borders & Inputs */
+	--border: oklch(0.93 0.005 250);           /* Ultra-subtle border for division lines */
+	--border-hover: oklch(0.85 0.01 250);
+	--input: oklch(0.95 0.005 250);
+	--ring: oklch(0.55 0.18 255);             /* Subtle primary glow */
 
-	/* Primary – modern electric blue */
-	--primary: oklch(0.58 0.19 255);
-	--primary-foreground: oklch(0.98 0.02 250);
+	/* Brand Palette - Modern Enterprise SaaS (Trustworthy Blue & Amber) */
+	--primary: oklch(0.52 0.18 255);          /* Royal Blue / Indigo Accent */
+	--primary-foreground: oklch(0.99 0.003 250);
+	
+	--secondary: oklch(0.96 0.01 250);        /* Secondary neutral button bg */
+	--secondary-foreground: oklch(0.2 0.015 255);
+	
+	--accent: oklch(0.94 0.02 245);           /* Soft highlight state tint */
+	--accent-foreground: oklch(0.45 0.16 255);
 
-	/* Secondary – energetic violet for accent highlights */
-	--secondary: oklch(0.72 0.17 300);
-	--secondary-foreground: oklch(0.98 0.02 250);
+	/* Status Colors - Calm & Highly Legible */
+	--success: oklch(0.62 0.17 145);          /* Balanced Teal-Green */
+	--success-bg: oklch(0.96 0.015 145);
+	--success-border: oklch(0.88 0.03 145);
+	
+	--warning: oklch(0.68 0.16 75);           /* Warm Amber/Yellow */
+	--warning-bg: oklch(0.97 0.02 75);
+	--warning-border: oklch(0.9 0.04 75);
+	
+	--danger: oklch(0.58 0.19 25);            /* Vivid Red/Destructive */
+	--danger-bg: oklch(0.97 0.015 25);
+	--danger-border: oklch(0.91 0.03 25);
+	
+	--info: oklch(0.58 0.16 240);             /* Cyan/Sky Blue for info */
+	--info-bg: oklch(0.95 0.02 240);
+	--info-border: oklch(0.88 0.04 240);
 
-	/* Accent – friendly turquoise (community warmth) */
-	--accent: oklch(0.7 0.16 180);
-	--accent-foreground: oklch(0.98 0.02 250);
-
-	/* Success/Info tones */
-	--success: oklch(0.7 0.14 150);
-	--info: oklch(0.74 0.16 240);
-
-	/* Surfaces */
-	--card: oklch(0.99 0.008 250);
-	--card-foreground: oklch(0.15 0.03 255);
-	--popover: oklch(1 0 0);
-	--popover-foreground: oklch(0.15 0.03 255);
-
-	/* Muted + UI structure */
-	--muted: oklch(0.96 0.012 250);
-	--muted-foreground: oklch(0.45 0.04 250);
-	--border: oklch(0.9 0.01 250);
-	--input: oklch(0.93 0.01 250);
-	--ring: oklch(0.6 0.09 260);
-
-	/* Sidebar */
-	--sidebar: oklch(0.98 0.015 250);
-	--sidebar-foreground: oklch(0.14 0.03 255);
+	/* Sidebar Theme Spec */
+	--sidebar: oklch(0.98 0.005 250);
+	--sidebar-foreground: oklch(0.25 0.015 255);
 	--sidebar-primary: var(--primary);
 	--sidebar-primary-foreground: var(--primary-foreground);
-	--sidebar-accent: var(--secondary);
-	--sidebar-accent-foreground: var(--secondary-foreground);
-	--sidebar-border: oklch(0.92 0.01 250);
+	--sidebar-accent: oklch(0.94 0.01 250);
+	--sidebar-accent-foreground: oklch(0.18 0.015 255);
+	--sidebar-border: oklch(0.93 0.005 250);
 	--sidebar-ring: var(--ring);
 
-	/* Charts (vibrant set) */
-	--chart-1: oklch(0.65 0.2 250);
-	--chart-2: oklch(0.7 0.18 180);
-	--chart-3: oklch(0.65 0.19 320);
-	--chart-4: oklch(0.75 0.18 90);
-	--chart-5: oklch(0.7 0.2 40);
+	/* Charts Theme (Linear Vibrant Palette) */
+	--chart-1: oklch(0.52 0.18 255);
+	--chart-2: oklch(0.62 0.17 145);
+	--chart-3: oklch(0.58 0.19 25);
+	--chart-4: oklch(0.68 0.16 75);
+	--chart-5: oklch(0.72 0.17 300);
 }
 
-/* 🌙 Dark Mode — balanced, luminous contrast */
+/* 🌙 Dark Mode — Luminous Dark UI (Attio/Vercel/Linear Style) */
 .dark {
-	--background: oklch(0.16 0.04 260);
-	--foreground: oklch(0.96 0.02 250);
+	--background: oklch(0.13 0.008 260);      /* Slate Black (Rich & Deep) */
+	--foreground: oklch(0.94 0.005 250);      /* Off-white readable text */
 
-	--primary: oklch(0.73 0.18 255);
-	--primary-foreground: oklch(0.15 0.03 260);
+	/* Surfaces & Layering */
+	--card: oklch(0.155 0.01 260);            /* Card background floating on deep slate */
+	--card-foreground: oklch(0.94 0.005 250);
+	--popover: oklch(0.165 0.01 260);
+	--popover-foreground: oklch(0.94 0.005 250);
 
-	--secondary: oklch(0.7 0.16 300);
-	--secondary-foreground: oklch(0.15 0.03 260);
+	/* Muted & Borders */
+	--muted: oklch(0.19 0.01 260);
+	--muted-foreground: oklch(0.62 0.01 260);
+	--border: oklch(0.19 0.01 260);           /* Clean border separation */
+	--border-hover: oklch(0.26 0.015 260);
+	--input: oklch(0.18 0.01 260);
+	--ring: oklch(0.52 0.18 255);
 
-	--accent: oklch(0.72 0.16 180);
-	--accent-foreground: oklch(0.15 0.03 260);
+	/* Secondary Actions */
+	--secondary: oklch(0.18 0.01 260);
+	--secondary-foreground: oklch(0.94 0.005 250);
+	
+	--accent: oklch(0.19 0.015 255);
+	--accent-foreground: oklch(0.72 0.12 255);
 
-	--card: oklch(0.2 0.04 260);
-	--card-foreground: oklch(0.95 0.02 250);
-	--popover: oklch(0.22 0.04 260);
-	--popover-foreground: oklch(0.95 0.02 250);
+	/* Status Colors - Optimized for Dark contrast */
+	--success: oklch(0.7 0.15 145);
+	--success-bg: oklch(0.18 0.02 145);
+	--success-border: oklch(0.23 0.04 145);
+	
+	--warning: oklch(0.74 0.14 75);
+	--warning-bg: oklch(0.18 0.02 75);
+	--warning-border: oklch(0.23 0.04 75);
+	
+	--danger: oklch(0.65 0.16 25);
+	--danger-bg: oklch(0.17 0.02 25);
+	--danger-border: oklch(0.22 0.04 25);
+	
+	--info: oklch(0.68 0.14 240);
+	--info-bg: oklch(0.17 0.02 240);
+	--info-border: oklch(0.22 0.04 240);
 
-	--muted: oklch(0.25 0.03 260);
-	--muted-foreground: oklch(0.8 0.02 260);
-
-	--border: oklch(0.28 0.03 260);
-	--input: oklch(0.3 0.03 260);
-	--ring: oklch(0.6 0.09 260);
-
-	--sidebar: oklch(0.18 0.04 260);
-	--sidebar-foreground: oklch(0.96 0.02 250);
-	--sidebar-border: oklch(0.28 0.03 260);
+	/* Sidebar Dark Theme Spec */
+	--sidebar: oklch(0.13 0.008 260);
+	--sidebar-foreground: oklch(0.9 0.005 250);
+	--sidebar-border: oklch(0.18 0.01 260);
+	--sidebar-accent: oklch(0.18 0.01 260);
+	--sidebar-accent-foreground: oklch(0.94 0.005 250);
 }
 
-/* ===============================
-   🧱 Theming Tokens (shadcn)
-   =============================== */
+/* ==========================================================================
+   🧱 Tailwind Theme Mapping (v4 Inline)
+   ========================================================================== */
+
 @theme inline {
 	--radius-sm: calc(var(--radius) - 4px);
 	--radius-md: calc(var(--radius) - 2px);
@@ -103,17 +145,26 @@
 
 	--color-background: var(--background);
 	--color-foreground: var(--foreground);
+	
 	--color-primary: var(--primary);
 	--color-primary-foreground: var(--primary-foreground);
+	
 	--color-secondary: var(--secondary);
 	--color-secondary-foreground: var(--secondary-foreground);
+	
 	--color-accent: var(--accent);
 	--color-accent-foreground: var(--accent-foreground);
+	
 	--color-card: var(--card);
 	--color-card-foreground: var(--card-foreground);
+	
+	--color-popover: var(--popover);
+	--color-popover-foreground: var(--popover-foreground);
+	
 	--color-border: var(--border);
 	--color-input: var(--input);
 	--color-ring: var(--ring);
+	
 	--color-sidebar: var(--sidebar);
 	--color-sidebar-foreground: var(--sidebar-foreground);
 	--color-sidebar-primary: var(--sidebar-primary);
@@ -123,23 +174,104 @@
 	--color-sidebar-border: var(--sidebar-border);
 }
 
-/* ===============================
-   🪄 Global Base Styles
-   =============================== */
+/* ==========================================================================
+   🪄 GLOBAL BASE LAYERS & MICRO-INTERACTIONS
+   ========================================================================== */
+
 @layer base {
 	* {
-		@apply border-border outline-ring/50 transition-colors duration-150;
+		@apply border-border outline-ring/40 transition-colors duration-150;
 	}
 
 	body {
-		@apply bg-background font-sans text-foreground antialiased;
+		@apply bg-background font-sans text-foreground antialiased selection:bg-primary/20;
+		font-family: var(--font-sans);
 	}
 
+	/* Micro-interactions & Focus states for standard interactive controls */
 	button,
-	[role='button'] {
-		@apply transition-transform duration-150 ease-in-out;
+	[role='button'],
+	a {
+		@apply focus-visible:ring-primary/50 focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-offset-background;
+	}
+	
+	/* Input Fields & Textareas standard state transition */
+	input,
+	textarea,
+	select {
+		@apply focus:border-primary/70 focus:ring-primary/20 focus:ring-2 focus:outline-hidden;
 	}
 }
+
+/* ==========================================================================
+   💡 PREMIUM HELPER CLASSES (UTILITIES & MIXINS)
+   ========================================================================== */
+
+/* Elegant Scrollbars */
+.custom-scrollbar {
+	scrollbar-width: thin;
+	scrollbar-color: var(--border) transparent;
+}
+
+.custom-scrollbar::-webkit-scrollbar {
+	width: 6px;
+	height: 6px;
+}
+
+.custom-scrollbar::-webkit-scrollbar-track {
+	background: transparent;
+}
+
+.custom-scrollbar::-webkit-scrollbar-thumb {
+	background: var(--border);
+	border-radius: 9999px;
+}
+
+.custom-scrollbar::-webkit-scrollbar-thumb:hover {
+	background: var(--border-hover);
+}
+
+/* Glassmorphism Surface (used sparingly for active navigation / floaters) */
+.glass-panel {
+	background: color-mix(in oklch, var(--card) 85%, transparent);
+	backdrop-filter: blur(12px);
+	-webkit-backdrop-filter: blur(12px);
+}
+
+/* Shimmer Loading Animations */
+.shimmer {
+	background: linear-gradient(
+		90deg,
+		rgba(255, 255, 255, 0) 0%,
+		rgba(255, 255, 255, 0.08) 20%,
+		rgba(255, 255, 255, 0.15) 60%,
+		rgba(255, 255, 255, 0) 100%
+	);
+	background-size: 200% 100%;
+	animation: shimmer-pulse 1.8s infinite linear;
+}
+
+.dark .shimmer {
+	background: linear-gradient(
+		90deg,
+		rgba(0, 0, 0, 0) 0%,
+		rgba(255, 255, 255, 0.03) 20%,
+		rgba(255, 255, 255, 0.06) 60%,
+		rgba(0, 0, 0, 0) 100%
+	);
+	background-size: 200% 100%;
+	animation: shimmer-pulse 1.8s infinite linear;
+}
+
+@keyframes shimmer-pulse {
+	0% {
+		background-position: 120% 0;
+	}
+	100% {
+		background-position: -20% 0;
+	}
+}
+
 html {
 	scroll-behavior: smooth;
 }

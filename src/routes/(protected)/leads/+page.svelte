@@ -532,7 +532,7 @@
 						</Label>
 						<Label class="flex flex-col gap-1">
 							<span class="font-semibold text-zinc-700 text-[15px] leading-5">Work Type</span>
-							<Select.Root value={addLeadForm.work_type} on:change={e => addLeadForm.work_type = e.detail}>
+							<Select.Root type="single" bind:value={addLeadForm.work_type}>
 								<Select.Trigger class="rounded border px-3 py-2 w-full text-left bg-white dark:bg-zinc-900 text-base">
 									{addLeadForm.work_type ? addLeadForm.work_type : 'Select Work Type'}
 								</Select.Trigger>
@@ -556,7 +556,7 @@
 					</Label>
 					<div class="flex flex-col gap-1">
 						<span class="font-semibold text-zinc-700 text-[15px] leading-5">Status</span>
-						<Select.Root value={addLeadForm.status} on:change={e => addLeadForm.status = e.detail}>
+						<Select.Root type="single" bind:value={addLeadForm.status}>
 							<Select.Trigger class="rounded border px-3 py-2 w-full text-left bg-white dark:bg-zinc-900 capitalize transition text-base">
 								{addLeadForm.status || "Select Status"}
 							</Select.Trigger>
@@ -583,7 +583,7 @@
 							variant="default"
 							class="w-full sm:w-auto flex gap-2 items-center justify-center"
 							disabled={addingLead}
-							on:click={() => submitCustomLead()}
+							onclick={() => submitCustomLead()}
 						>
 							{#if addingLead}
 								<svg class="animate-spin size-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10" stroke-opacity=".1"/><path d="M4 12a8 8 0 017-7.94" /></svg>

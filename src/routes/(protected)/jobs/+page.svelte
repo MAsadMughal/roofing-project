@@ -5,6 +5,11 @@
 	import Card from '$lib/components/ui/card/card.svelte';
 	import Input from '$lib/components/ui/input/input.svelte';
 	import * as Select from '$lib/components/ui/select';
+	import StatCard from '$lib/components/StatCard.svelte';
+	import StatusBadge from '$lib/components/StatusBadge.svelte';
+	import ProgressBar from '$lib/components/ProgressBar.svelte';
+	import EmptyState from '$lib/components/EmptyState.svelte';
+
 	import {
 		AlertCircle,
 		Calendar,
@@ -25,48 +30,7 @@
 		Users
 	} from '@lucide/svelte/icons';
 
-	const { data } = $props();
-
-	// Status configuration
-	const STATUS_META: Record<string, { title: string; color: string; bgColor: string }> = {
-		scheduled: {
-			title: 'Scheduled',
-			color: 'text-blue-800 dark:text-blue-400',
-			bgColor: 'bg-blue-100 dark:bg-blue-900/70'
-		},
-		
-		in_progress: {
-			title: 'In Progress',
-			color: 'text-yellow-800 dark:text-yellow-400',
-			bgColor: 'bg-yellow-100 dark:bg-yellow-900/70'
-		},
-		completed: {
-			title: 'Completed',
-			color: 'text-green-800 dark:text-green-400',
-			bgColor: 'bg-green-100 dark:bg-green-900/70'
-		},
-		pending_payment: {
-			title: 'Pending Payment',
-			color: 'text-violet-800 dark:text-violet-400',
-			bgColor: 'bg-violet-100 dark:bg-violet-900/70'
-		},
-		cancelled: {
-			title: 'Cancelled',
-			color: 'text-red-800 dark:text-red-400',
-			bgColor: 'bg-red-100 dark:bg-red-900/70'
-		}
-	};
-
-	// Priority configuration
-	const PRIORITY_META: Record<string, { title: string; color: string; bgColor: string }> = {
-		high: { title: 'High', color: 'text-red-500', bgColor: 'bg-d-100 dark:bg-red-900/70' },
-		medium: {
-			title: 'Medium',
-			color: 'text-yellow-500',
-			bgColor: 'bg-yellow-100 dark:bg-yellow-900/70'
-		},
-		low: { title: 'Low', color: 'text-gray-500', bgColor: 'bg-gray-100 dark:bg-gray-900/70' }
-	};
+	const { data } = $props<{ data: any }>();
 
 	// View types
 	type ViewType = 'kanban' | 'list' | 'grid';
@@ -163,6 +127,8 @@
 		return grouped;
 	});
 
+	const statusOrder = ['scheduled', 'in_progress', 'completed', 'pending_payment', 'cancelled'];
+
 	// Apply filters
 	function applyFilters() {
 		const params = new URLSearchParams();
@@ -222,467 +188,412 @@
 </script>
 
 <svelte:head>
-	<title>Jobs - Project Management</title>
+	<title>Jobs Management | ROOFPILOT CRM</title>
 </svelte:head>
 
-<div class="w-full space-y-6 px-2 pt-2 md:px-0">
-	<!-- Header with Stats -->
-	<div class="flex flex-col gap-4">
-		<div class="flex items-center justify-between">
-			<h1 class="text-3xl font-bold tracking-tight">Jobs</h1>
-			<!-- <Button class="!rounded-full shadow-sm" onclick={openNewJob}>
-				<Plus class="mr-2 size-4" /> New Job
-			</Button> -->
+<div class="mx-auto w-full max-w-7xl space-y-6 p-6">
+	<!-- Page Title Header -->
+	<div class="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+		<div>
+			<h1 class="text-2xl font-bold tracking-tight text-foreground">Active Jobs</h1>
+			<p class="text-muted-foreground mt-0.5 text-sm">
+				Manage projects, track task progression, and monitor work status
+			</p>
 		</div>
-
-		<!-- Stats Cards -->
-		<div class="grid grid-cols-2 gap-4 md:grid-cols-4 lg:grid-cols-7">
-			<Card
-				class="border-blue-200 bg-gradient-to-br from-blue-50 to-blue-100 p-4 dark:border-blue-800 dark:from-blue-900/20 dark:to-blue-800/20"
-			>
-				<div class="flex items-center justify-between">
-					<div>
-						<p class="text-sm font-medium text-blue-600 dark:text-blue-400">Total</p>
-						<p class="text-2xl font-bold text-blue-900 dark:text-blue-100">
-							{data.stats?.total || 0}
-						</p>
-					</div>
-					<FileText class="size-8 text-blue-500 opacity-60" />
-				</div>
-			</Card>
-
-			<Card
-				class="border-sky-200 bg-gradient-to-br from-sky-50 to-sky-100 p-4 dark:border-sky-800 dark:from-sky-900/20 dark:to-sky-800/20"
-			>
-				<div class="flex items-center justify-between">
-					<div>
-						<p class="text-sm font-medium text-sky-600 dark:text-sky-400">Scheduled</p>
-						<p class="text-2xl font-bold text-sky-900 dark:text-sky-100">
-							{data.stats?.scheduled || 0}
-						</p>
-					</div>
-					<Calendar class="size-8 text-sky-500 opacity-60" />
-				</div>
-			</Card>
-
-			<Card
-				class="border-yellow-200 bg-gradient-to-br from-yellow-50 to-yellow-100 p-4 dark:border-yellow-800 dark:from-yellow-900/20 dark:to-yellow-800/20"
-			>
-				<div class="flex items-center justify-between">
-					<div>
-						<p class="text-sm font-medium text-yellow-600 dark:text-yellow-400">In Progress</p>
-						<p class="text-2xl font-bold text-yellow-900 dark:text-yellow-100">
-							{data.stats?.inProgress || 0}
-						</p>
-					</div>
-					<Clock class="size-8 text-yellow-500 opacity-60" />
-				</div>
-			</Card>
-
-			<Card
-				class="border-green-200 bg-gradient-to-br from-green-50 to-green-100 p-4 dark:border-green-800 dark:from-green-900/20 dark:to-green-800/20"
-			>
-				<div class="flex items-center justify-between">
-					<div>
-						<p class="text-sm font-medium text-green-600 dark:text-green-400">Completed</p>
-						<p class="text-2xl font-bold text-green-900 dark:text-green-100">
-							{data.stats?.completed || 0}
-						</p>
-					</div>
-					<CheckCircle2 class="size-8 text-green-500 opacity-60" />
-				</div>
-			</Card>
-
-			<Card
-				class="border-violet-200 bg-gradient-to-br from-violet-50 to-violet-100 p-4 dark:border-violet-800 dark:from-violet-900/20 dark:to-violet-800/20"
-			>
-				<div class="flex items-center justify-between">
-					<div>
-						<p class="text-sm font-medium text-violet-600 dark:text-violet-400">Pending Payment</p>
-						<p class="text-2xl font-bold text-violet-900 dark:text-violet-100">
-							{data.stats?.pendingPayment || 0}
-						</p>
-					</div>
-					<DollarSign class="size-8 text-violet-500 opacity-60" />
-				</div>
-			</Card>
-
-			<Card
-				class="border-red-200 bg-gradient-to-br from-red-50 to-red-100 p-4 dark:border-red-800 dark:from-red-900/20 dark:to-red-800/20"
-			>
-				<div class="flex items-center justify-between">
-					<div>
-						<p class="text-sm font-medium text-red-600 dark:text-red-400">High Priority</p>
-						<p class="text-2xl font-bold text-red-900 dark:text-red-100">
-							{data.stats?.highPriority || 0}
-						</p>
-					</div>
-					<AlertCircle class="size-8 text-red-500 opacity-60" />
-				</div>
-			</Card>
-
-			<Card
-				class="border-emerald-200 bg-gradient-to-br from-emerald-50 to-emerald-100 p-4 dark:border-emerald-800 dark:from-emerald-900/20 dark:to-emerald-800/20"
-			>
-				<div class="flex items-center justify-between">
-					<div>
-						<p class="text-sm font-medium text-emerald-600 dark:text-emerald-400">Revenue</p>
-						<p class="text-xl font-bold text-emerald-900 dark:text-emerald-100">
-							{currency(data.stats?.totalRevenue || 0)}
-						</p>
-					</div>
-					<TrendingUp class="size-8 text-emerald-500 opacity-60" />
-				</div>
-			</Card>
-		</div>
+		<Button size="sm" onclick={openNewJob} class="shrink-0 gap-2 shadow-sm">
+			<Plus class="size-4" />
+			New Job
+		</Button>
 	</div>
 
-	<!-- Filters and View Toggle -->
-	<div class="flex flex-col items-start justify-between gap-4 md:flex-row md:items-center">
+	<!-- Statistics Summary Row -->
+	<div class="grid grid-cols-2 gap-4 sm:grid-cols-4 lg:grid-cols-7">
+		<StatCard
+			label="Total Jobs"
+			value={data.stats?.total || 0}
+			icon={FileText}
+			colorClass="text-slate-500"
+		/>
+		<StatCard
+			label="Scheduled"
+			value={data.stats?.scheduled || 0}
+			icon={Calendar}
+			colorClass="text-blue-500"
+		/>
+		<StatCard
+			label="In Progress"
+			value={data.stats?.inProgress || 0}
+			icon={Clock}
+			colorClass="text-amber-500"
+		/>
+		<StatCard
+			label="Completed"
+			value={data.stats?.completed || 0}
+			icon={CheckCircle2}
+			colorClass="text-emerald-500"
+		/>
+		<StatCard
+			label="Pending Pay"
+			value={data.stats?.pendingPayment || 0}
+			icon={DollarSign}
+			colorClass="text-violet-500"
+		/>
+		<StatCard
+			label="High Priority"
+			value={data.stats?.highPriority || 0}
+			icon={AlertCircle}
+			colorClass="text-red-500"
+		/>
+		<StatCard
+			label="Revenue"
+			value={currency(data.stats?.totalRevenue || 0)}
+			icon={TrendingUp}
+			colorClass="text-emerald-500"
+		/>
+	</div>
+
+	<!-- Filter Controls & View Switching -->
+	<div
+		class="flex flex-col gap-4 rounded-xl border border-border bg-card p-4 shadow-xs sm:flex-row sm:items-center sm:justify-between"
+	>
+		<!-- Active Filters -->
 		<div class="flex flex-1 flex-wrap items-center gap-3">
-			<!-- Search -->
-			<div class="relative max-w-md min-w-[200px] flex-1">
-				<Search class="absolute top-1/2 left-3 size-4 -translate-y-1/2 text-gray-400" />
+			<div class="relative w-full max-w-xs sm:w-64">
+				<Search class="text-muted-foreground absolute top-1/2 left-3 size-4 -translate-y-1/2" />
 				<Input
-					class="rounded-full bg-gray-50 pl-10 focus:ring-2  focus:ring-sky-400 dark:bg-gray-800"
-					placeholder="Search jobs, customer, address..."
+					class="h-9 pl-9 text-sm"
+					placeholder="Search details..."
 					bind:value={searchText}
 					onkeydown={(e) => e.key === 'Enter' && applyFilters()}
 				/>
 			</div>
 
-			<!-- Status Filter -->
 			<Select.Root type="single" bind:value={statusFilter}>
-				<Select.Trigger class="min-w-[140px]">
+				<Select.Trigger class="h-9 min-w-[130px] text-sm">
 					{statusOptions.find((o) => o.value === statusFilter)?.label || 'All Statuses'}
 				</Select.Trigger>
 				<Select.Content>
 					<Select.Group>
 						{#each statusOptions as opt}
-							<Select.Item value={opt.value}>{opt.label}</Select.Item>
+							<Select.Item value={opt.value} class="text-sm">{opt.label}</Select.Item>
 						{/each}
 					</Select.Group>
 				</Select.Content>
 			</Select.Root>
 
-			<!-- Priority Filter -->
 			<Select.Root type="single" bind:value={priorityFilter}>
-				<Select.Trigger class="min-w-[140px]">
+				<Select.Trigger class="h-9 min-w-[130px] text-sm">
 					{priorityOptions.find((o) => o.value === priorityFilter)?.label || 'All Priorities'}
 				</Select.Trigger>
 				<Select.Content>
 					<Select.Group>
 						{#each priorityOptions as opt}
-							<Select.Item value={opt.value}>{opt.label}</Select.Item>
+							<Select.Item value={opt.value} class="text-sm">{opt.label}</Select.Item>
 						{/each}
 					</Select.Group>
 				</Select.Content>
 			</Select.Root>
 
-			<!-- Filter Toggle -->
-			<Button variant="outline" size="sm" onclick={() => (showFilters = !showFilters)}>
-				<Filter class="mr-2 size-4" /> Filters
+			<Button
+				variant="outline"
+				size="sm"
+				onclick={() => (showFilters = !showFilters)}
+				class="h-9 gap-1.5"
+			>
+				<Filter class="size-4" /> Filters
 			</Button>
 
-			<!-- Apply Filters -->
-			<Button size="sm" onclick={applyFilters}>Apply</Button>
+			<Button size="sm" onclick={applyFilters} class="h-9">Apply</Button>
+
 			{#if statusFilter !== 'all' || priorityFilter !== 'all' || searchText || dateFrom || dateTo}
-				<Button variant="ghost" size="sm" onclick={clearFilters}>Clear</Button>
+				<Button
+					variant="ghost"
+					size="sm"
+					onclick={clearFilters}
+					class="text-muted-foreground h-9 hover:text-foreground">Clear</Button
+				>
 			{/if}
 		</div>
 
-		<!-- View Toggle -->
-		<div class="flex items-center gap-2">
+		<!-- View Switch Toggle buttons -->
+		<div
+			class="flex items-center gap-1 self-start rounded-lg bg-slate-100 p-1 sm:self-auto dark:bg-slate-800"
+		>
 			<Button
-				variant={currentView === 'kanban' ? 'default' : 'outline'}
-				size="sm"
+				variant={currentView === 'kanban' ? 'secondary' : 'ghost'}
+				size="icon"
+				class="size-8 rounded-md"
 				onclick={() => changeView('kanban')}
+				title="Kanban Board View"
 			>
 				<LayoutGrid class="size-4" />
 			</Button>
 			<Button
-				variant={currentView === 'list' ? 'default' : 'outline'}
-				size="sm"
+				variant={currentView === 'list' ? 'secondary' : 'ghost'}
+				size="icon"
+				class="size-8 rounded-md"
 				onclick={() => changeView('list')}
+				title="List View"
 			>
 				<List class="size-4" />
 			</Button>
 			<Button
-				variant={currentView === 'grid' ? 'default' : 'outline'}
-				size="sm"
+				variant={currentView === 'grid' ? 'secondary' : 'ghost'}
+				size="icon"
+				class="size-8 rounded-md"
 				onclick={() => changeView('grid')}
+				title="Grid Cards View"
 			>
 				<Grid3x3 class="size-4" />
 			</Button>
 		</div>
 	</div>
 
-	<!-- Advanced Filters -->
+	<!-- Date filters expanded panel -->
 	{#if showFilters}
-		<Card class="bg-gray-50 p-4 dark:bg-gray-900/50">
-			<div class="grid grid-cols-1 gap-4 md:grid-cols-2">
-				<div>
-					<label for="date-from" class="mb-2 block text-sm font-medium">Date From</label>
-					<Input id="date-from" type="date" bind:value={dateFrom} class="w-full" />
+		<Card class="border border-border bg-slate-50/50 p-4 dark:bg-slate-900/30">
+			<div class="grid grid-cols-1 gap-4 sm:grid-cols-2">
+				<div class="space-y-1.5">
+					<label for="date-from" class="text-muted-foreground text-xs font-semibold"
+						>Date From</label
+					>
+					<Input id="date-from" type="date" bind:value={dateFrom} class="h-9" />
 				</div>
-				<div>
-					<label for="date-to" class="mb-2 block text-sm font-medium">Date To</label>
-					<Input id="date-to" type="date" bind:value={dateTo} class="w-full" />
+				<div class="space-y-1.5">
+					<label for="date-to" class="text-muted-foreground text-xs font-semibold">Date To</label>
+					<Input id="date-to" type="date" bind:value={dateTo} class="h-9" />
 				</div>
 			</div>
 		</Card>
 	{/if}
 
-	<!-- Jobs Display -->
-	<div class="mt-6">
+	<!-- View render block -->
+	<div class="mt-4">
 		{#if currentView === 'kanban'}
-			<!-- Kanban Board View -->
-			<div class="grid grid-cols-1 gap-4 overflow-x-auto pb-4 md:grid-cols-3 lg:grid-cols-5">
-				{#each Object.entries(jobsByStatus()) as [status, jobs]}
+			<!-- Kanban Board View (Scrollable horizontally) -->
+			<div class="scrollbar-thin flex gap-4 overflow-x-auto pb-6">
+				{#each statusOrder as status}
 					{#if statusFilter === 'all' || statusFilter === status}
-						<Card
-							class="flex h-fit flex-col border-gray-200 bg-gray-50 dark:border-gray-800 dark:bg-gray-900/50"
+						{@const columnJobs = jobsByStatus()[status] || []}
+
+						<div
+							class="flex h-fit w-72 shrink-0 flex-col rounded-xl border border-border bg-slate-50/50 md:w-80 dark:bg-slate-900/10"
 						>
-							<div class="border-b border-gray-200 p-4 dark:border-gray-800">
-								<div class="flex items-center justify-between">
-									<div class="flex items-center gap-2">
-										{#if STATUS_META[status]}
-											<span
-												class="rounded-full px-2 py-1 text-xs font-semibold {STATUS_META[status]
-													.bgColor} {STATUS_META[status].color}"
-											>
-												{STATUS_META[status].title}
-											</span>
-										{/if}
-										<Badge
-											class="bg-gray-200 text-xs text-gray-700 dark:bg-gray-700 dark:text-gray-300"
-											>{jobs.length}</Badge
-										>
-									</div>
+							<!-- Column Header -->
+							<div
+								class="flex items-center justify-between rounded-t-xl border-b border-border bg-card/40 p-4"
+							>
+								<div class="flex items-center gap-2">
+									<StatusBadge type="job" value={status} />
+									<Badge
+										variant="secondary"
+										class="bg-slate-200/50 text-xs text-slate-700 dark:bg-slate-800 dark:text-slate-300"
+									>
+										{columnJobs.length}
+									</Badge>
 								</div>
 							</div>
-							<div class="max-h-[calc(100vh-400px)] min-h-[200px] space-y-3 overflow-y-auto p-2">
-								{#each jobs as job (job.id)}
+
+							<!-- Scrollable card body container -->
+							<div
+								class="custom-scrollbar max-h-[calc(100vh-360px)] min-h-[300px] space-y-3 overflow-y-auto p-3"
+							>
+								{#each columnJobs as job (job.id)}
 									{@const customer = job.customer}
+
 									<Card
-										class="cursor-pointer border-l-4 border-l-sky-500 bg-white p-4 transition-shadow hover:shadow-md dark:bg-gray-800"
+										class="group cursor-pointer border border-border bg-card p-4 transition-all hover:border-slate-300 hover:shadow-xs dark:hover:border-slate-700"
 										role="button"
 										tabindex={0}
 										onclick={() => selectJob(job.id)}
-										onkeydown={(e) =>
-											e.key === 'Enter' || e.key === ' ' ? selectJob(job.id) : null}
+										onkeydown={(e) => (e.key === 'Enter' || e.key === ' ') && selectJob(job.id)}
 									>
-										<div class="space-y-2">
-											<div class="flex items-start justify-between">
-												<h3 class="line-clamp-2 flex-1 text-sm font-semibold">{job.title}</h3>
-												{#if job.priority && PRIORITY_META[job.priority]}
-													<Badge
-														class="text-xs {PRIORITY_META[job.priority].bgColor} {PRIORITY_META[
-															job.priority
-														].color}"
-													>
-														{PRIORITY_META[job.priority].title}
-													</Badge>
+										<div class="space-y-3">
+											<!-- Card top badges -->
+											<div class="flex items-start justify-between gap-2">
+												<h3
+													class="line-clamp-2 text-sm font-semibold text-foreground transition-colors group-hover:text-primary"
+												>
+													{job.title}
+												</h3>
+												{#if job.priority}
+													<StatusBadge type="priority" value={job.priority} class="shrink-0" />
 												{/if}
 											</div>
 
-											{#if customer}
-												<div
-													class="flex items-center gap-2 text-xs text-gray-600 dark:text-gray-400"
-												>
-													<User2 class="size-3" />
-													<span>{customer.firstName} {customer.lastName}</span>
-												</div>
-											{/if}
+											<!-- Details metadata rows -->
+											<div class="space-y-1.5">
+												{#if customer}
+													<div class="text-muted-foreground flex items-center gap-2 text-xs">
+														<User2 class="size-3.5 shrink-0" />
+														<span class="truncate">{customer.firstName} {customer.lastName}</span>
+													</div>
+												{/if}
 
-											{#if job.scheduledDate}
-												<div
-													class="flex items-center gap-2 text-xs text-gray-600 dark:text-gray-400"
-												>
-													<Calendar class="size-3" />
-													<span>{fmtDateShort(job.scheduledDate)}</span>
-												</div>
-											{/if}
+												{#if job.scheduledDate}
+													<div class="text-muted-foreground flex items-center gap-2 text-xs">
+														<Calendar class="size-3.5 shrink-0" />
+														<span>{fmtDateShort(job.scheduledDate)}</span>
+													</div>
+												{/if}
+											</div>
 
+											<!-- Progress Bar -->
 											{#if job.progress !== undefined}
-												<div class="space-y-1">
-													<div class="flex items-center justify-between text-xs">
-														<span class="text-gray-600 dark:text-gray-400">Progress</span>
-														<span class="font-medium">{job.progress}%</span>
-													</div>
-													<div class="h-2 w-full rounded-full bg-gray-200 dark:bg-gray-700">
-														<div
-															class="h-2 rounded-full bg-sky-500 transition-all duration-300"
-															style="width: {Number(job.progress) || 0}%"
-														></div>
-													</div>
-												</div>
+												<ProgressBar progress={job.progress} showText={true} />
 											{/if}
 
-											{#if job.amount}
-												<div class="text-sm font-semibold text-gray-900 dark:text-gray-100">
-													{currency(job.amount)}
-												</div>
-											{/if}
+											<!-- Card footer values -->
+											<div
+												class="mt-2 flex items-center justify-between border-t border-border/60 pt-2.5"
+											>
+												{#if job.amount}
+													<span class="text-sm font-bold text-foreground">
+														{currency(job.amount)}
+													</span>
+												{:else}
+													<span></span>
+												{/if}
 
-											<div class="flex items-center gap-2 pt-2">
 												<Button
 													variant="ghost"
 													size="sm"
-													class="flex-1 text-xs"
+													class="h-7 gap-1 px-2.5 text-xs hover:bg-slate-100"
 													onclick={(e) => {
 														e.stopPropagation();
 														viewJob(job);
 													}}
 												>
-													<Eye class="mr-1 size-3" /> View
+													<Eye class="size-3" /> View
 												</Button>
 											</div>
 										</div>
 									</Card>
 								{/each}
-								{#if jobs.length === 0}
-									<div class="py-8 text-center text-sm text-gray-400">No jobs in this status</div>
+
+								{#if columnJobs.length === 0}
+									<EmptyState title="No Jobs" description="No jobs scheduled in this phase yet." />
 								{/if}
 							</div>
-						</Card>
+						</div>
 					{/if}
 				{/each}
 			</div>
 		{:else if currentView === 'list'}
-			<!-- List View -->
-			<Card class="overflow-hidden">
+			<!-- List View Table design -->
+			<Card class="overflow-hidden border border-border shadow-xs">
 				<div class="overflow-x-auto">
 					<table class="w-full">
-						<thead class="border-b bg-gray-50 dark:bg-gray-900/50">
+						<thead class="border-b border-border bg-slate-50/50 dark:bg-slate-900/30">
 							<tr>
 								<th
-									class="px-6 py-3 text-left text-xs font-semibold tracking-wider text-gray-600 uppercase dark:text-gray-400"
+									class="text-muted-foreground px-5 py-3 text-left text-xs font-semibold tracking-wider uppercase"
+									>Job Details</th
 								>
-									Job
-								</th>
 								<th
-									class="px-6 py-3 text-left text-xs font-semibold tracking-wider text-gray-600 uppercase dark:text-gray-400"
+									class="text-muted-foreground px-5 py-3 text-left text-xs font-semibold tracking-wider uppercase"
+									>Customer</th
 								>
-									Customer
-								</th>
 								<th
-									class="px-6 py-3 text-left text-xs font-semibold tracking-wider text-gray-600 uppercase dark:text-gray-400"
+									class="text-muted-foreground px-5 py-3 text-left text-xs font-semibold tracking-wider uppercase"
+									>Status</th
 								>
-									Status
-								</th>
 								<th
-									class="px-6 py-3 text-left text-xs font-semibold tracking-wider text-gray-600 uppercase dark:text-gray-400"
+									class="text-muted-foreground px-5 py-3 text-left text-xs font-semibold tracking-wider uppercase"
+									>Priority</th
 								>
-									Priority
-								</th>
 								<th
-									class="px-6 py-3 text-left text-xs font-semibold tracking-wider text-gray-600 uppercase dark:text-gray-400"
+									class="text-muted-foreground px-5 py-3 text-left text-xs font-semibold tracking-wider uppercase"
+									>Scheduled</th
 								>
-									Date
-								</th>
 								<th
-									class="px-6 py-3 text-left text-xs font-semibold tracking-wider text-gray-600 uppercase dark:text-gray-400"
+									class="text-muted-foreground px-5 py-3 text-left text-xs font-semibold tracking-wider uppercase"
+									>Progress</th
 								>
-									Progress
-								</th>
 								<th
-									class="px-6 py-3 text-left text-xs font-semibold tracking-wider text-gray-600 uppercase dark:text-gray-400"
+									class="text-muted-foreground px-5 py-3 text-left text-xs font-semibold tracking-wider uppercase"
+									>Amount</th
 								>
-									Amount
-								</th>
 								<th
-									class="px-6 py-3 text-left text-xs font-semibold tracking-wider text-gray-600 uppercase dark:text-gray-400"
-								>
-									Actions
-								</th>
+									class="text-muted-foreground w-16 px-5 py-3 text-left text-xs font-semibold tracking-wider uppercase"
+								></th>
 							</tr>
 						</thead>
-						<tbody class="divide-y divide-gray-200 dark:divide-gray-800">
+						<tbody class="divide-y divide-border bg-card">
 							{#each filteredJobs() as job (job.id)}
 								{@const customer = job.customer}
 								<tr
-									class="cursor-pointer transition-colors hover:bg-gray-50 dark:hover:bg-gray-900/50"
-									role="button"
-									tabindex={0}
+									class="group cursor-pointer transition-colors hover:bg-slate-50/50 dark:hover:bg-slate-900/10"
 									onclick={() => selectJob(job.id)}
-									onkeydown={(e) => (e.key === 'Enter' || e.key === ' ' ? selectJob(job.id) : null)}
 								>
-									<td class="px-6 py-4">
-										<div class="font-semibold">{job.title}</div>
+									<td class="px-5 py-3.5">
+										<div
+											class="text-sm font-semibold text-foreground transition-colors group-hover:text-primary"
+										>
+											{job.title}
+										</div>
 										{#if job.description}
-											<div class="line-clamp-1 text-sm text-gray-500 dark:text-gray-400">
+											<div class="text-muted-foreground mt-0.5 line-clamp-1 text-xs">
 												{job.description}
 											</div>
 										{/if}
 									</td>
-									<td class="px-6 py-4">
+									<td class="px-5 py-3.5 text-sm">
 										{#if customer}
 											<div class="flex items-center gap-2">
-												<User2 class="size-4 text-gray-400" />
+												<User2 class="text-muted-foreground size-4" />
 												<span>{customer.firstName} {customer.lastName}</span>
 											</div>
 										{:else}
-											<span class="text-gray-400">No customer</span>
+											<span class="text-muted-foreground">-</span>
 										{/if}
 									</td>
-									<td class="px-6 py-4">
-										{#if STATUS_META[job.status]}
-											<Badge
-												class="{STATUS_META[job.status].bgColor} {STATUS_META[job.status].color}"
-											>
-												{STATUS_META[job.status].title}
-											</Badge>
-										{/if}
+									<td class="px-5 py-3.5">
+										<StatusBadge type="job" value={job.status} />
 									</td>
-									<td class="px-6 py-4">
-										{#if job.priority && PRIORITY_META[job.priority]}
-											<Badge
-												class="{PRIORITY_META[job.priority].bgColor} {PRIORITY_META[job.priority]
-													.color}"
-											>
-												{PRIORITY_META[job.priority].title}
-											</Badge>
+									<td class="px-5 py-3.5">
+										{#if job.priority}
+											<StatusBadge type="priority" value={job.priority} />
 										{:else}
-											<span class="text-gray-400">-</span>
+											<span class="text-muted-foreground">-</span>
 										{/if}
 									</td>
-									<td class="px-6 py-4 text-sm">
+									<td class="text-muted-foreground px-5 py-3.5 text-sm">
 										{#if job.scheduledDate}
 											<div class="flex items-center gap-2">
-												<Calendar class="size-4 text-gray-400" />
+												<Calendar class="size-4" />
 												<span>{fmtDateShort(job.scheduledDate)}</span>
 											</div>
 										{:else}
-											<span class="text-gray-400">-</span>
+											<span>-</span>
 										{/if}
 									</td>
-									<td class="px-6 py-4">
+									<td class="px-5 py-3.5">
 										{#if job.progress !== undefined}
-											<div class="flex min-w-[120px] items-center gap-2">
-												<div class="h-2 flex-1 rounded-full bg-gray-200 dark:bg-gray-700">
-													<div
-														class="h-2 rounded-full bg-sky-500 transition-all"
-														style="width: {Number(job.progress) || 0}%"
-													></div>
-												</div>
-												<span class="w-8 text-xs font-medium">{job.progress}%</span>
+											<div class="flex min-w-[120px] items-center gap-3">
+												<ProgressBar progress={job.progress} class="flex-1" />
+												<span class="text-muted-foreground w-8 text-xs font-semibold"
+													>{job.progress}%</span
+												>
 											</div>
 										{:else}
-											<span class="text-gray-400">-</span>
+											<span class="text-muted-foreground">-</span>
 										{/if}
 									</td>
-									<td class="px-6 py-4 font-semibold">{currency(job.amount || 0)}</td>
-									<td class="px-6 py-4">
+									<td class="px-5 py-3.5 text-sm font-bold text-foreground">
+										{currency(job.amount || 0)}
+									</td>
+									<td class="px-5 py-3.5 text-right">
 										<Button
 											variant="ghost"
-											size="sm"
+											size="icon"
+											class="size-8 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-800"
 											onclick={(e) => {
 												e.stopPropagation();
 												viewJob(job);
 											}}
 										>
-											<Eye class="size-4" />
+											<Eye class="text-muted-foreground size-4" />
 										</Button>
 									</td>
 								</tr>
@@ -690,126 +601,91 @@
 						</tbody>
 					</table>
 				</div>
+
 				{#if filteredJobs().length === 0}
-					<div class="py-24 text-center text-gray-400">No jobs found</div>
+					<EmptyState title="No Jobs Found" description="No active projects match your filters." />
 				{/if}
 			</Card>
 		{:else if currentView === 'grid'}
-			<!-- Grid View -->
-			<div class="grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+			<!-- Grid View Card Layout -->
+			<div class="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
 				{#each filteredJobs() as job (job.id)}
 					{@const customer = job.customer}
 					<Card
-						class="cursor-pointer border-l-4 border-l-sky-500 p-5 transition-all hover:shadow-lg"
-						role="button"
-						tabindex={0}
+						class="group cursor-pointer border border-border bg-card p-5 transition-all hover:border-slate-300 hover:shadow-sm dark:hover:border-slate-700"
 						onclick={() => selectJob(job.id)}
-						onkeydown={(e) => (e.key === 'Enter' || e.key === ' ' ? selectJob(job.id) : null)}
 					>
-						<div class="space-y-3">
-							<div class="flex items-start justify-between">
-								<h3 class="line-clamp-2 flex-1 text-lg font-semibold">{job.title}</h3>
-								{#if job.priority && PRIORITY_META[job.priority]}
-									<Badge
-										class="text-xs {PRIORITY_META[job.priority].bgColor} {PRIORITY_META[
-											job.priority
-										].color}"
-									>
-										{PRIORITY_META[job.priority].title}
-									</Badge>
+						<div class="space-y-4">
+							<div class="flex items-start justify-between gap-2">
+								<h3
+									class="line-clamp-2 text-base font-semibold text-foreground transition-colors group-hover:text-primary"
+								>
+									{job.title}
+								</h3>
+								{#if job.priority}
+									<StatusBadge type="priority" value={job.priority} />
 								{/if}
 							</div>
 
-							{#if STATUS_META[job.status]}
-								<Badge class="{STATUS_META[job.status].bgColor} {STATUS_META[job.status].color}">
-									{STATUS_META[job.status].title}
-								</Badge>
-							{/if}
+							<div class="flex flex-wrap items-center gap-2">
+								<StatusBadge type="job" value={job.status} />
+							</div>
 
-							{#if customer}
-								<div class="flex items-center gap-2 text-sm text-gray-600 dark:text-gray-400">
-									<User2 class="size-4" />
-									<span>{customer.firstName} {customer.lastName}</span>
-								</div>
-							{/if}
+							<div class="space-y-2.5 border-t border-border/60 pt-1.5">
+								{#if customer}
+									<div class="text-muted-foreground flex items-center gap-2 text-xs">
+										<User2 class="size-4 shrink-0" />
+										<span>{customer.firstName} {customer.lastName}</span>
+									</div>
+								{/if}
 
-							{#if job.address}
-								<div class="flex items-center gap-2 text-sm text-gray-600 dark:text-gray-400">
-									<MapPin class="size-4" />
-									<span class="line-clamp-1">{job.address}</span>
-								</div>
-							{/if}
+								{#if job.address}
+									<div class="text-muted-foreground flex items-center gap-2 text-xs">
+										<MapPin class="size-4 shrink-0" />
+										<span class="truncate">{job.address}</span>
+									</div>
+								{/if}
 
-							{#if job.scheduledDate}
-								<div class="flex items-center gap-2 text-sm text-gray-600 dark:text-gray-400">
-									<Calendar class="size-4" />
-									<span>{fmtDate(job.scheduledDate)}</span>
-								</div>
-							{/if}
+								{#if job.scheduledDate}
+									<div class="text-muted-foreground flex items-center gap-2 text-xs">
+										<Calendar class="size-4 shrink-0" />
+										<span>{fmtDate(job.scheduledDate)}</span>
+									</div>
+								{/if}
+							</div>
 
 							{#if job.progress !== undefined}
-								<div class="space-y-1">
-									<div class="flex items-center justify-between text-xs">
-										<span class="text-gray-600 dark:text-gray-400">Progress</span>
-										<span class="font-medium">{job.progress}%</span>
-									</div>
-									<div class="h-2 w-full rounded-full bg-gray-200 dark:bg-gray-700">
-										<div
-											class="h-2 rounded-full bg-sky-500 transition-all"
-											style="width: {Number(job.progress) || 0}%"
-										></div>
-									</div>
-								</div>
+								<ProgressBar progress={job.progress} showText={true} />
 							{/if}
 
-							{#if job.amount}
-								<div class="text-lg font-bold text-gray-900 dark:text-gray-100">
-									{currency(job.amount)}
-								</div>
-							{/if}
+							<div class="mt-2 flex items-center justify-between border-t border-border/60 pt-3">
+								<span class="text-base font-bold text-foreground">
+									{currency(job.amount || 0)}
+								</span>
 
-							{#if job.crewDetails}
-								<div class="flex items-center gap-2 text-xs text-gray-500 dark:text-gray-400">
-									<Users class="size-4" />
-									<span>{job.crewDetails}</span>
-								</div>
-							{/if}
-
-							<div class="flex items-center gap-2 border-t pt-2">
 								<Button
 									variant="ghost"
 									size="sm"
-									class="flex-1"
+									class="h-8 gap-1.5 px-3 text-xs hover:bg-slate-100"
 									onclick={(e) => {
 										e.stopPropagation();
 										viewJob(job);
 									}}
 								>
-									<Eye class="mr-1 size-4" /> View Details
+									<Eye class="size-3.5" /> Details
 								</Button>
 							</div>
 						</div>
 					</Card>
 				{/each}
 			</div>
+
 			{#if filteredJobs().length === 0}
-				<div class="py-24 text-center text-gray-400">No jobs found</div>
+				<EmptyState
+					title="No Jobs Found"
+					description="Try editing your search filters or add a new job."
+				/>
 			{/if}
 		{/if}
 	</div>
 </div>
-
-<style>
-	.line-clamp-1 {
-		display: -webkit-box;
-		-webkit-line-clamp: 1;
-		-webkit-box-orient: vertical;
-		overflow: hidden;
-	}
-	.line-clamp-2 {
-		display: -webkit-box;
-		-webkit-line-clamp: 2;
-		-webkit-box-orient: vertical;
-		overflow: hidden;
-	}
-</style>

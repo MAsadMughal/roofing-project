@@ -28,6 +28,21 @@ values
 ((select id from customers where email = 'ava.walker@example.com'), 'Soffit/Fascia Repair', 'Rotten soffit boards.', 'new', 'Email')
 on conflict do nothing;
 
+-- Assignments
+insert into assignments (lead_id, assigned_to_id, owner_id, role, status)
+values
+((select id from leads where title = 'Roof Inspection' limit 1), (select id from users where role = 'REP' limit 1), (select id from users where role = 'OWNER' limit 1), 'Sales Rep', 'assigned'),
+((select id from leads where title = 'Shingle Repair' limit 1), (select id from users where role = 'REP' limit 1), (select id from users where role = 'OWNER' limit 1), 'Sales Rep', 'assigned'),
+((select id from leads where title = 'Full Re-roof' limit 1), (select id from users where role = 'REP' limit 1), (select id from users where role = 'OWNER' limit 1), 'Sales Rep', 'assigned'),
+((select id from leads where title = 'Skylight Leak' limit 1), (select id from users where role = 'REP' limit 1), (select id from users where role = 'OWNER' limit 1), 'Sales Rep', 'assigned'),
+((select id from leads where title = 'Gutter Replacement' limit 1), (select id from users where role = 'REP' limit 1), (select id from users where role = 'OWNER' limit 1), 'Sales Rep', 'assigned'),
+((select id from leads where title = 'Attic Ventilation' limit 1), (select id from users where role = 'REP' limit 1), (select id from users where role = 'OWNER' limit 1), 'Sales Rep', 'assigned'),
+((select id from leads where title = 'Metal Roof Install' limit 1), (select id from users where role = 'REP' limit 1), (select id from users where role = 'OWNER' limit 1), 'Sales Rep', 'assigned'),
+((select id from leads where title = 'Flat Roof Repair' limit 1), (select id from users where role = 'REP' limit 1), (select id from users where role = 'OWNER' limit 1), 'Sales Rep', 'assigned'),
+((select id from leads where title = 'Storm Damage' limit 1), (select id from users where role = 'REP' limit 1), (select id from users where role = 'OWNER' limit 1), 'Sales Rep', 'assigned'),
+((select id from leads where title = 'Soffit/Fascia Repair' limit 1), (select id from users where role = 'REP' limit 1), (select id from users where role = 'OWNER' limit 1), 'Sales Rep', 'assigned')
+on conflict do nothing;
+
 -- Jobs (with progress field)
 insert into jobs (customer_id, lead_id, title, description, status, progress, scheduled_date, start_date, end_date, crew_details)
 values
@@ -74,15 +89,50 @@ values
 on conflict do nothing;
 
 -- Proposals (one per estimate)
-insert into proposals (estimate_id, content, status)
+insert into proposals (assignment_id, estimate_id, content, status)
 values
-((select id from estimates where customer_id = (select id from customers where email = 'john.doe@example.com') limit 1), 'Proposal for inspection', 'draft'),
-((select id from estimates where customer_id = (select id from customers where email = 'emma.brown@example.com') limit 1), 'Proposal for shingle repair', 'sent'),
-((select id from estimates where customer_id = (select id from customers where email = 'mike.taylor@example.com') limit 1), 'Proposal for full re-roof', 'signed'),
-((select id from estimates where customer_id = (select id from customers where email = 'sarah.johnson@example.com') limit 1), 'Proposal for skylight leak repair', 'draft'),
-((select id from estimates where customer_id = (select id from customers where email = 'robert.king@example.com') limit 1), 'Proposal for gutter replacement', 'sent'),
-((select id from estimates where customer_id = (select id from customers where email = 'sophia.martinez@example.com') limit 1), 'Proposal for flat roof repairs', 'sent'),
-((select id from estimates where customer_id = (select id from customers where email = 'daniel.lee@example.com') limit 1), 'Proposal for storm damage repair', 'signed')
+(
+	(select id from assignments where lead_id = (select id from leads where customer_id = (select id from customers where email = 'john.doe@example.com') limit 1) limit 1),
+	(select id from estimates where customer_id = (select id from customers where email = 'john.doe@example.com') limit 1),
+	'Proposal for inspection',
+	'draft'
+),
+(
+	(select id from assignments where lead_id = (select id from leads where customer_id = (select id from customers where email = 'emma.brown@example.com') limit 1) limit 1),
+	(select id from estimates where customer_id = (select id from customers where email = 'emma.brown@example.com') limit 1),
+	'Proposal for shingle repair',
+	'sent'
+),
+(
+	(select id from assignments where lead_id = (select id from leads where customer_id = (select id from customers where email = 'mike.taylor@example.com') limit 1) limit 1),
+	(select id from estimates where customer_id = (select id from customers where email = 'mike.taylor@example.com') limit 1),
+	'Proposal for full re-roof',
+	'signed'
+),
+(
+	(select id from assignments where lead_id = (select id from leads where customer_id = (select id from customers where email = 'sarah.johnson@example.com') limit 1) limit 1),
+	(select id from estimates where customer_id = (select id from customers where email = 'sarah.johnson@example.com') limit 1),
+	'Proposal for skylight leak repair',
+	'draft'
+),
+(
+	(select id from assignments where lead_id = (select id from leads where customer_id = (select id from customers where email = 'robert.king@example.com') limit 1) limit 1),
+	(select id from estimates where customer_id = (select id from customers where email = 'robert.king@example.com') limit 1),
+	'Proposal for gutter replacement',
+	'sent'
+),
+(
+	(select id from assignments where lead_id = (select id from leads where customer_id = (select id from customers where email = 'sophia.martinez@example.com') limit 1) limit 1),
+	(select id from estimates where customer_id = (select id from customers where email = 'sophia.martinez@example.com') limit 1),
+	'Proposal for flat roof repairs',
+	'sent'
+),
+(
+	(select id from assignments where lead_id = (select id from leads where customer_id = (select id from customers where email = 'daniel.lee@example.com') limit 1) limit 1),
+	(select id from estimates where customer_id = (select id from customers where email = 'daniel.lee@example.com') limit 1),
+	'Proposal for storm damage repair',
+	'signed'
+)
 on conflict do nothing;
 
 -- Invoices (with subtotal, tax_rate, tax_amount, invoice_number, created_by_id)
